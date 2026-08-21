@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, ArrowRight, Check, AlertCircle, Loader2 } from 'lucide-react';
+import { X, ArrowRight, Check, AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 import { UrsaLoginCredentials, UrsaProgram } from '@/types/ursa';
 
 interface LoginModalProps {
@@ -21,8 +21,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [program, setProgram] = useState<UrsaProgram>('regular');
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isFadingOut, setIsFadingOut] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
@@ -44,14 +46,22 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     setLoading(false);
     if (success) {
       setIsSuccess(true);
+      setIsFadingOut(false);
+      // After showing Login Successfully text, start smooth fade out:
+      setTimeout(() => {
+        setIsFadingOut(true);
+      }, 1350);
+
+      // Clean up and close after fade out transition completes (precisely 1.75s):
       setTimeout(() => {
         setIsSuccess(false);
+        setIsFadingOut(false);
         setUsername('');
         setPassword('');
         setLocalError(null);
         setIsShaking(false);
         onClose();
-      }, 1000);
+      }, 1750);
     } else {
       setLocalError(authError || 'ชื่อผู้ใช้งาน URSA หรือรหัสผ่าน URSA ไม่ถูกต้อง');
       setIsShaking(true);
@@ -65,28 +75,24 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-in fade-in duration-200 cursor-pointer select-none"
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md cursor-pointer select-none transition-opacity duration-[400ms] ease-out ${
+        isFadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100 animate-in fade-in duration-200'
+      }`}
     >
-      {/* Relative wrapper for outer floating close button */}
-      <div className="relative max-w-[420px] w-full cursor-default">
-        {/* Top Floating Close Button (Directly above card, fine minimal Apple icon) */}
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute -top-7 right-2 sm:right-3 z-10 p-1 text-white/60 hover:text-white transition-all cursor-pointer active:scale-90"
-          title="ปิด (หรือคลิกพื้นที่ด้านนอก)"
-        >
-          <X className="w-4 h-4 stroke-[1.5]" />
-        </button>
-
+      {/* Modal Container */}
+      <div className="relative max-w-[440px] w-full cursor-default">
         {/* Modal Card Content */}
         <div
           onClick={(e) => e.stopPropagation()}
-          className="bg-white text-[#1D1D1F] rounded-[32px] w-full p-8 sm:p-10 transform animate-in zoom-in-95 duration-200 border border-black/[0.12] text-center"
+          className={`${
+            isSuccess
+              ? 'bg-transparent border-none text-white shadow-none p-8 sm:p-10'
+              : 'bg-[#F8F8FA] text-[#1D1D1F] border border-black/[0.12] shadow-[0_24px_64px_rgba(0,0,0,0.22),0_4px_12px_rgba(0,0,0,0.06)]'
+          } rounded-[22px] w-full overflow-hidden transform animate-in zoom-in-95 duration-200 text-center`}
         >
           {isSuccess ? (
             <div className="py-12 text-center space-y-3">
-              {/* Grey Circular Progress Filling Clockwise */}
+              {/* White Circular Progress Filling Clockwise */}
               <div className="relative w-14 h-14 mx-auto flex items-center justify-center">
                 <svg className="w-14 h-14 -rotate-90" viewBox="0 0 56 56">
                   {/* Subtle background track */}
@@ -97,7 +103,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2.5"
-                    className="text-black/[0.08]"
+                    className="text-white/20"
                   />
                   {/* Clockwise Progress Stroke Fill */}
                   <circle
@@ -108,99 +114,167 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     stroke="currentColor"
                     strokeWidth="2.5"
                     strokeLinecap="round"
-                    className="text-[#86868B] animate-fill-circle"
+                    className="text-white animate-fill-circle"
                   />
                 </svg>
-                {/* Grey Checkmark in Center */}
-                <Check className="w-6 h-6 text-[#86868B] stroke-[2.5] absolute animate-check-pop" />
+                {/* White Checkmark in Center */}
+                <Check className="w-6 h-6 text-white stroke-[2.5] absolute animate-check-pop" />
               </div>
-              <h4 className="apple-headline text-xl text-[#1D1D1F]">เข้าสู่ระบบสำเร็จ!</h4>
-              <p className="text-xs text-[#86868B]">กำลังเชื่อมต่อข้อมูลนักศึกษามหาวิทยาลัยกรุงเทพ...</p>
+              <h4 className="apple-subheadline text-xl text-white font-light tracking-wide pt-1 animate-fade-slide-up">
+                Login Successfully
+              </h4>
             </div>
           ) : (
-          <form onSubmit={handleFormSubmit} className="space-y-6">
-            {/* Header: Clean Title */}
-            <div className="flex flex-col items-center justify-center pt-2">
-              <h3 className="apple-headline text-2xl text-[#1D1D1F] font-bold tracking-tight">
-                Login with URSA ID
-              </h3>
-            </div>
-
-            <div className="space-y-3 text-left">
-              {/* Clean Input Fields with Shake Animation on Error (Only boxes shake) */}
-              <div className={`space-y-3 transition-all ${isShaking ? 'animate-shake' : ''}`}>
-                {/* Textbox 1: URSA ID */}
-                <div className="relative">
-                  <input
-                    type="text"
-                    required
-                    placeholder="URSA ID"
-                    value={username}
-                    onChange={(e) => {
-                      setUsername(e.target.value);
-                      if (localError) setLocalError(null);
-                    }}
-                    disabled={activeLoading}
-                    className="w-full px-4 py-3.5 bg-white border border-black/15 rounded-2xl text-sm text-[#1D1D1F] placeholder-[#86868B] focus:outline-none focus:border-[#0071E3] transition-all apple-subheadline font-normal disabled:opacity-50"
-                  />
-                </div>
-
-                {/* Textbox 2: URSA PASSWORD */}
-                <div className="relative">
-                  <input
-                    type="password"
-                    required
-                    placeholder="URSA PASSWORD"
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      if (localError) setLocalError(null);
-                    }}
-                    disabled={activeLoading}
-                    className="w-full px-4 py-3.5 bg-white border border-black/15 rounded-2xl text-sm text-[#1D1D1F] placeholder-[#86868B] focus:outline-none focus:border-[#0071E3] transition-all apple-subheadline font-normal disabled:opacity-50"
-                  />
-                </div>
+            <div>
+              {/* macOS Header Bar */}
+              <div className="flex items-center justify-between px-5 py-3 border-b border-black/[0.08] bg-white/70 backdrop-blur-md">
+                <h3 className="font-bold text-[15.5px] text-[#1D1D1F] tracking-tight">
+                  Sign In
+                </h3>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-3 py-1 bg-white hover:bg-[#F2F2F7] active:bg-[#E5E5EA] border border-black/15 rounded-[7px] text-xs font-normal text-[#1D1D1F] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
               </div>
 
-              {/* Centered Error Message under Password Textbox (Static, Does Not Shake) */}
-              {displayedError && (
-                <div className="pt-0.5 px-1 text-center animate-in fade-in duration-150">
-                  <span className="leading-tight font-medium text-[11.5px] sm:text-xs text-[#86868B]">
-                    ชื่อผู้ใช้งาน URSA หรือรหัสผ่าน URSA ไม่ถูกต้อง
-                  </span>
+              {/* Form Body */}
+              <form onSubmit={handleFormSubmit} autoComplete="on" className="p-6 sm:p-7 space-y-5">
+                {/* Apple Blue Profile Silhouette Icon */}
+                <div className="flex justify-center pt-1 pb-0.5">
+                  <div className="w-12 h-12 rounded-full bg-[#0071E3]/12 flex items-center justify-center text-[#0071E3]">
+                    <svg className="w-6.5 h-6.5 fill-current" viewBox="0 0 24 24">
+                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                    </svg>
+                  </div>
                 </div>
-              )}
-            </div>
 
-            {/* Submit Button */}
-            <div>
-              <button
-                type="submit"
-                disabled={activeLoading || !username || !password}
-                className="w-full py-3.5 rounded-2xl bg-[#0071E3] text-white hover:bg-[#0077ED] active:scale-98 font-semibold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {activeLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin text-white" />
-                    <span>กำลังเชื่อมต่อ...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>เข้าสู่ระบบ</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
-            </div>
+                {/* Title & Subtitle */}
+                <div className="space-y-1">
+                  <h4 className="apple-headline text-[17px] font-bold text-[#1D1D1F] tracking-tight">
+                    Login with URSA ID
+                  </h4>
+                  <p className="text-xs text-[#86868B] max-w-[300px] mx-auto leading-relaxed">
+                    กรอกชื่อผู้ใช้และรหัสผ่าน URSA เพื่อเชื่อมต่อข้อมูลตารางเรียน
+                  </p>
+                </div>
 
-            {/* Footnote text requested by user */}
-            <div className="pt-1">
-              <p className="text-[12px] text-[#86868B] font-normal leading-relaxed">
-                ใช้ข้อมูลนี้เพื่อส่งต่อไปยัง URSA ผ่าน Backend
-              </p>
+                {/* Input Fields */}
+                <div className="space-y-2.5 text-left max-w-[340px] mx-auto w-full">
+                  <div className={`space-y-2.5 transition-all ${isShaking ? 'animate-shake' : ''}`}>
+                    {/* Textbox 1: URSA ID */}
+                    <div className="relative">
+                      <input
+                        type="text"
+                        name="username"
+                        id="username"
+                        autoComplete="username"
+                        required
+                        placeholder="URSA ID"
+                        value={username}
+                        onChange={(e) => {
+                          setUsername(e.target.value);
+                          if (localError) setLocalError(null);
+                        }}
+                        disabled={activeLoading}
+                        className="w-full px-3.5 py-2.5 bg-white border border-black/15 rounded-xl text-sm text-[#1D1D1F] placeholder-[#86868B] focus:outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/15 transition-all font-normal disabled:opacity-50"
+                      />
+                    </div>
+
+                    {/* Textbox 2: URSA PASSWORD */}
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        name="password"
+                        id="password"
+                        autoComplete="current-password"
+                        required
+                        placeholder="URSA PASSWORD"
+                        value={password}
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          if (localError) setLocalError(null);
+                        }}
+                        disabled={activeLoading}
+                        className="w-full pl-3.5 pr-10 py-2.5 bg-white border border-black/15 rounded-xl text-sm text-[#1D1D1F] placeholder-[#86868B] focus:outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/15 transition-all font-normal disabled:opacity-50"
+                      />
+                      {password && (
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#86868B] hover:text-[#1D1D1F] transition-colors p-1 cursor-pointer"
+                          title={showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="w-4 h-4" />
+                          ) : (
+                            <Eye className="w-4 h-4" />
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Centered Error Message */}
+                  {displayedError && (
+                    <div className="pt-0.5 text-center animate-in fade-in duration-150">
+                      <span className="leading-tight font-medium text-[11.5px] text-[#86868B]">
+                        ชื่อผู้ใช้งาน URSA หรือรหัสผ่าน URSA ไม่ถูกต้อง
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Submit Button */}
+                <div className="flex justify-center pt-1">
+                  <button
+                    type="submit"
+                    disabled={activeLoading || !username || !password}
+                    className="w-auto min-w-[160px] px-8 py-2.5 rounded-full bg-[#0071E3] text-white hover:bg-[#0077ED] active:scale-[0.98] font-semibold text-sm transition-all flex items-center justify-center cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-none"
+                  >
+                    {activeLoading ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <svg
+                          className="w-4 h-4 animate-spin text-white"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          {[
+                            0.08, 0.16, 0.25, 0.33, 0.42, 0.5, 0.58, 0.67, 0.75, 0.83, 0.92, 1.0,
+                          ].map((op, i) => (
+                            <rect
+                              key={i}
+                              x="11"
+                              y="1.5"
+                              width="2"
+                              height="5.5"
+                              rx="1"
+                              fill="currentColor"
+                              opacity={op}
+                              transform={`rotate(${i * 30} 12 12)`}
+                            />
+                          ))}
+                        </svg>
+                        <span>กำลังเชื่อมต่อ...</span>
+                      </div>
+                    ) : (
+                      <span>เข้าสู่ระบบ</span>
+                    )}
+                  </button>
+                </div>
+
+                {/* Footnote */}
+                <div className="pt-0.5">
+                  <p className="text-[11.5px] text-[#86868B] font-normal leading-relaxed">
+                    ใช้ข้อมูลนี้เพื่อส่งต่อไปยัง URSA ผ่าน Backend
+                  </p>
+                </div>
+              </form>
             </div>
-          </form>
-        )}
+          )}
         </div>
       </div>
     </div>

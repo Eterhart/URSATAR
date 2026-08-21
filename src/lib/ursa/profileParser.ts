@@ -14,6 +14,16 @@ export interface ParsedProfile {
 }
 
 /**
+ * Strips titles/prefixes like Miss, Mr., Mrs., นาย, นางสาว, etc.
+ */
+export function stripTitlePrefix(raw: string): string {
+  if (!raw) return '';
+  return raw
+    .replace(/^(?:Miss\b|Mr\b\.?|Mrs\b\.?|Ms\b\.?|Dr\b\.?|นาย|นางสาว|นาง|น\.ส\.|ด\.ช\.|ด\.ญ\.)\s*/i, '')
+    .trim();
+}
+
+/**
  * Strips HTML tags and decodes common HTML entities.
  */
 export function cleanHtmlText(raw: string): string {
@@ -196,7 +206,11 @@ export function parseProfileHtml(html: string | null | undefined): ParsedProfile
     }
   }
 
-  // 5. Compute Display Meta
+  // 5. Clean Name & Compute Display Meta
+  if (result.studentName) {
+    result.studentName = stripTitlePrefix(result.studentName);
+  }
+
   if (result.studentId) {
     result.meta = `Student ID ${result.studentId}`;
   } else {

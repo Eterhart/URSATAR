@@ -105,11 +105,10 @@ interface UnselectedCoursesTableProps {
   onToggleHideSections?: (keys: string[], hide?: boolean) => void;
   onAddCourse?: (course: Course, section: Section) => void;
   seatFilters?: {
-    available: boolean;
-    'almost-full': boolean;
+    'not-full': boolean;
     full: boolean;
   };
-  onToggleSeatFilter?: (key: 'all' | 'available' | 'almost-full' | 'full') => void;
+  onToggleSeatFilter?: (key: 'all' | 'not-full' | 'full') => void;
   selectedLetters?: string[];
   onToggleLetter?: (letter: string) => void;
   onSelectAllLetters?: (letters: string[]) => void;
@@ -126,7 +125,7 @@ export const UnselectedCoursesTable: React.FC<UnselectedCoursesTableProps> = ({
   hiddenSections = {},
   onToggleHideSections,
   onAddCourse,
-  seatFilters = { available: true, 'almost-full': true, full: true },
+  seatFilters = { 'not-full': true, full: true },
   onToggleSeatFilter,
   selectedLetters = [],
   onToggleLetter,
@@ -543,11 +542,9 @@ export const UnselectedCoursesTable: React.FC<UnselectedCoursesTableProps> = ({
                       {(() => {
                         const filtered = course.sections.filter((s) => {
                           const isFull = s.availableSeats === 0 || s.status === 'Freeze' || s.status === 'Closed';
-                          const isAlmostFull = !isFull && s.availableSeats > 0 && s.availableSeats <= 5;
-                          const isAvailable = !isFull && s.availableSeats > 5;
+                          const isNotFull = !isFull;
 
-                          if (isAvailable && !seatFilters.available) return false;
-                          if (isAlmostFull && !seatFilters['almost-full']) return false;
+                          if (isNotFull && !seatFilters['not-full']) return false;
                           if (isFull && !seatFilters.full) return false;
 
                           if (selectedLetters.length > 0) {

@@ -51,7 +51,7 @@ export const FilterSortMenu: React.FC<FilterSortMenuProps> = ({
   // Count active filters to display a badge
   const activeCount = useMemo(() => {
     let count = 0;
-    const isSeatFiltered = !(seatFilters.available && seatFilters['almost-full'] && seatFilters.full);
+    const isSeatFiltered = !(seatFilters['not-full'] && seatFilters.full);
     if (isSeatFiltered) count++;
     if (selectedLetters.length > 0 && selectedLetters.length < allLetters.length) count++;
     return count;
@@ -128,13 +128,13 @@ export const FilterSortMenu: React.FC<FilterSortMenuProps> = ({
               </div>
             </div>
 
-            {/* Segmented Control */}
-            <div className="grid grid-cols-4 gap-1 p-1 bg-[#F2F2F7] rounded-[12px] border border-black/[0.04] text-[11px]">
+            {/* Segmented Control: ทั้งหมด / ที่นั่งยังไม่เต็ม / ที่นั่งเต็ม */}
+            <div className="grid grid-cols-3 gap-1 p-1 bg-[#F2F2F7] rounded-[12px] border border-black/[0.04] text-[11px]">
               <button
                 type="button"
                 onClick={() => onToggleSeatFilter('all')}
                 className={`py-1.5 rounded-[8px] text-center transition-all cursor-pointer ${
-                  seatFilters.available && seatFilters['almost-full'] && seatFilters.full
+                  seatFilters['not-full'] && seatFilters.full
                     ? 'bg-white text-[#1D1D1F] font-bold shadow-[0_1px_3px_rgba(0,0,0,0.1)] border border-black/[0.04]'
                     : 'text-[#86868B] hover:text-[#1D1D1F] font-medium'
                 }`}
@@ -143,39 +143,25 @@ export const FilterSortMenu: React.FC<FilterSortMenuProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => onToggleSeatFilter('available')}
-                className={`py-1.5 rounded-[8px] text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                  seatFilters.available
+                onClick={() => onToggleSeatFilter('not-full')}
+                className={`py-1.5 rounded-[8px] text-center transition-all cursor-pointer truncate px-1 ${
+                  seatFilters['not-full'] && !seatFilters.full
                     ? 'bg-white text-[#1D1D1F] font-bold shadow-[0_1px_3px_rgba(0,0,0,0.1)] border border-black/[0.04]'
-                    : 'text-[#86868B] opacity-40 hover:opacity-75 font-medium'
+                    : 'text-[#86868B] hover:text-[#1D1D1F] font-medium'
                 }`}
               >
-                <span className="w-2 h-2 rounded-full bg-[#34C759] shrink-0" />
-                <span>ว่าง</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => onToggleSeatFilter('almost-full')}
-                className={`py-1.5 rounded-[8px] text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                  seatFilters['almost-full']
-                    ? 'bg-white text-[#1D1D1F] font-bold shadow-[0_1px_3px_rgba(0,0,0,0.1)] border border-black/[0.04]'
-                    : 'text-[#86868B] opacity-40 hover:opacity-75 font-medium'
-                }`}
-              >
-                <span className="w-2 h-2 rounded-full bg-[#FF9500] shrink-0" />
-                <span>เกือบเต็ม</span>
+                ที่นั่งยังไม่เต็ม
               </button>
               <button
                 type="button"
                 onClick={() => onToggleSeatFilter('full')}
-                className={`py-1.5 rounded-[8px] text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                  seatFilters.full
+                className={`py-1.5 rounded-[8px] text-center transition-all cursor-pointer truncate px-1 ${
+                  seatFilters.full && !seatFilters['not-full']
                     ? 'bg-white text-[#1D1D1F] font-bold shadow-[0_1px_3px_rgba(0,0,0,0.1)] border border-black/[0.04]'
-                    : 'text-[#86868B] opacity-40 hover:opacity-75 font-medium'
+                    : 'text-[#86868B] hover:text-[#1D1D1F] font-medium'
                 }`}
               >
-                <span className="w-2 h-2 rounded-full bg-[#FF3B30] shrink-0" />
-                <span>เต็ม</span>
+                ที่นั่งเต็ม
               </button>
             </div>
           </div>

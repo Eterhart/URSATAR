@@ -65,8 +65,6 @@ export const EnrolledCoursesTable: React.FC<EnrolledCoursesTableProps> = ({
                 ? 'Fri'
                 : 'Sat';
 
-            const courseCredit = course.credits ?? 3;
-
             return (
               <div key={course.id} className="space-y-2">
                 {/* Course Header */}
@@ -79,14 +77,6 @@ export const EnrolledCoursesTable: React.FC<EnrolledCoursesTableProps> = ({
                       {course.nameEn}
                     </span>
                   )}
-                  {course.nameTh && (
-                    <span className="text-xs text-[#86868B] font-normal">
-                      ({course.nameTh})
-                    </span>
-                  )}
-                  <span className="text-xs font-medium text-[#86868B]">
-                    {courseCredit} หน่วยกิต
-                  </span>
                 </div>
 
                 {/* Table with Pixel-Perfect Matching Column Alignment & Generous Remark Widths */}

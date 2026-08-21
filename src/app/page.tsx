@@ -19,17 +19,15 @@ import { SortOption } from '@/components/FilterSortMenu';
 
 const PLANNER_STORAGE_KEY = 'bu-planer:schedules:v2';
 
-export type SeatFilterKey = 'available' | 'almost-full' | 'full';
+export type SeatFilterKey = 'not-full' | 'full';
 
 export interface SeatFilterMap {
-  available: boolean;
-  'almost-full': boolean;
+  'not-full': boolean;
   full: boolean;
 }
 
 export const DEFAULT_SEAT_FILTERS: SeatFilterMap = {
-  available: true,
-  'almost-full': true,
+  'not-full': true,
   full: true,
 };
 
@@ -53,6 +51,7 @@ export default function HomePage() {
     isLoading: isSectionsLoading,
     fetchFormControls,
     searchSections,
+    clearResults,
   } = useUrsaSections();
 
   // 3. Plans State & LocalStorage Persistence (Starts 100% empty)
@@ -252,18 +251,21 @@ export default function HomePage() {
   const handleToggleSeatFilter = useCallback((key: 'all' | SeatFilterKey) => {
     setSeatFilters((prev) => {
       if (key === 'all') {
-        const allSelected = prev.available && prev['almost-full'] && prev.full;
-        if (allSelected) {
-          return prev;
+        return { 'not-full': true, full: true };
+      }
+      if (key === 'not-full') {
+        if (prev['not-full'] && !prev.full) {
+          return { 'not-full': true, full: true };
         }
-        return { available: true, 'almost-full': true, full: true };
+        return { 'not-full': true, full: false };
       }
-      const next = { ...prev, [key]: !prev[key] };
-      const hasAny = next.available || next['almost-full'] || next.full;
-      if (!hasAny) {
-        return { available: true, 'almost-full': true, full: true };
+      if (key === 'full') {
+        if (prev.full && !prev['not-full']) {
+          return { 'not-full': true, full: true };
+        }
+        return { 'not-full': false, full: true };
       }
-      return next;
+      return prev;
     });
   }, []);
 
@@ -299,11 +301,9 @@ export default function HomePage() {
         if (hiddenSections[key]) return;
 
         const isFull = sec.availableSeats === 0 || sec.status === 'Freeze' || sec.status === 'Closed';
-        const isAlmostFull = !isFull && sec.availableSeats > 0 && sec.availableSeats <= 5;
-        const isAvailable = !isFull && sec.availableSeats > 5;
+        const isNotFull = !isFull;
 
-        if (isAvailable && !seatFilters.available) return;
-        if (isAlmostFull && !seatFilters['almost-full']) return;
+        if (isNotFull && !seatFilters['not-full']) return;
         if (isFull && !seatFilters.full) return;
 
         // Section Letter filter (e.g. A, B, C, D, E, F, G, H)
@@ -412,12 +412,14 @@ export default function HomePage() {
     savePlansToStorage(updated);
   };
 
-  const handleResetPlan = () => {
-    if (window.confirm(`คุณแน่ใจหรือไม่ว่าต้องการล้างวิชาทั้งหมดใน ${currentPlan.name}?`)) {
+  const handleResetPlan = (targetPlanId?: PlanId) => {
+    const pId = targetPlanId || activePlan;
+    const pName = plans[pId]?.name || 'แผนนี้';
+    if (window.confirm(`คุณแน่ใจหรือไม่ว่าต้องการรีเซ็ตวิชาทั้งหมดใน ${pName}?`)) {
       const updated = {
         ...plans,
-        [activePlan]: {
-          ...plans[activePlan],
+        [pId]: {
+          ...plans[pId],
           items: [],
         },
       };
@@ -440,10 +442,12 @@ export default function HomePage() {
           {isFullyLoggedIn ? (
             <div className="flex items-center gap-1.5 flex-wrap justify-center">
               <span>คุณกำลังเข้าใช้งานในฐานะ</span>
-              <span className="font-semibold text-[#1D1D1F]">{studentName}</span>
+              <span className="font-semibold text-[#1D1D1F]">
+                {studentName ? studentName.replace(/^(?:Miss\b|Mr\b\.?|Mrs\b\.?|Ms\b\.?|Dr\b\.?|นาย|นางสาว|นาง|น\.ส\.|ด\.ช\.|ด\.ญ\.)\s*/i, '').trim() : ''}
+              </span>
               {studentId && (
                 <>
-                  <span className="ml-1 hidden xs:inline">รหัสนักศึกษา</span>
+                  <span className="text-[#6E6E73] ml-1">รหัสนักศึกษา</span>
                   <span className="font-semibold text-[#1D1D1F]">{studentId}</span>
                 </>
               )}
@@ -503,6 +507,7 @@ export default function HomePage() {
               onAddPlan={handleAddPlan}
               onDeletePlan={handleDeletePlan}
               onRenamePlan={handleRenamePlan}
+              onResetPlan={handleResetPlan}
               onReorderPlans={handleReorderPlans}
               isExpanded={isExpanded}
               onToggleExpand={() => setIsExpanded(!isExpanded)}
@@ -526,6 +531,7 @@ export default function HomePage() {
                   searchQuery={searchQuery}
                   onSearchChange={setSearchQuery}
                   onExecuteSearch={handleExecuteSearch}
+                  onClearSearch={clearResults}
                   isLoading={isSectionsLoading}
                   formControls={form?.controls || []}
                 />
@@ -585,6 +591,7 @@ export default function HomePage() {
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
               onExecuteSearch={handleExecuteSearch}
+              onClearSearch={clearResults}
               isLoading={isSectionsLoading}
               formControls={form?.controls || []}
             />

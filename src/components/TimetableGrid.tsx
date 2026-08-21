@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Course, Section, TimeConflict, SelectedCourseItem, PlanId, PlanData } from '@/types/schedule';
-import { AlertTriangle, X, Plus, Edit3, Trash2, ChevronRight, ChevronLeft, Search, Maximize2, Minimize2 } from 'lucide-react';
+import { AlertTriangle, X, Plus, Edit3, Trash2, RotateCcw, ChevronRight, ChevronLeft, Search, Maximize2, Minimize2 } from 'lucide-react';
 import { FilterSortMenu, SortOption } from './FilterSortMenu';
 
 interface TimetableGridProps {
@@ -12,7 +12,7 @@ interface TimetableGridProps {
   onRemoveItem: (courseId: string, sectionNo: string) => void;
   onAddCourse: (course: Course, section: Section) => void;
   onOpenCopyModal?: () => void;
-  onResetPlan?: () => void;
+  onResetPlan?: (id?: PlanId) => void;
   hoveredCourseId?: string | null;
   onHoverCourse?: (id: string | null) => void;
   gridRef?: React.RefObject<HTMLDivElement | null>;
@@ -27,11 +27,10 @@ interface TimetableGridProps {
   isExpanded?: boolean;
   onToggleExpand?: () => void;
   seatFilters?: {
-    available: boolean;
-    'almost-full': boolean;
+    'not-full': boolean;
     full: boolean;
   };
-  onToggleSeatFilter?: (key: 'all' | 'available' | 'almost-full' | 'full') => void;
+  onToggleSeatFilter?: (key: 'all' | 'not-full' | 'full') => void;
   selectedLetters?: string[];
   onToggleLetter?: (letter: string) => void;
   onSelectAllLetters?: (letters: string[]) => void;
@@ -81,6 +80,7 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
   conflicts,
   onRemoveItem,
   onAddCourse,
+  onResetPlan,
   hoveredCourseId: externalHoveredId,
   onHoverCourse,
   gridRef,
@@ -93,7 +93,7 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
   onReorderPlans,
   isExpanded = false,
   onToggleExpand,
-  seatFilters = { available: true, 'almost-full': true, full: true },
+  seatFilters = { 'not-full': true, full: true },
   onToggleSeatFilter,
   selectedLetters = [],
   onToggleLetter,
@@ -502,18 +502,19 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
           ref={tabsScrollRef}
           className="flex items-end gap-1 overflow-x-auto no-scrollbar relative z-10 flex-1 min-w-0 pb-0"
         >
-          {planEntries.map((plan) => {
+          {planEntries.map((plan, index) => {
             const isActive = plan.id === activePlan;
             const isEditing = editingPlanId === plan.id;
-            const isThisTabDragging = dragState?.tabId === plan.id && dragState.isDragging;
-            const dragOffset = isThisTabDragging ? dragState.currentX - dragState.startX : 0;
+            const isThisTabDragging = Boolean(dragState && dragState.isDragging && dragState.tabId === plan.id);
+            const dragOffset = isThisTabDragging && dragState ? dragState.currentX - dragState.startX : 0;
+            const tabUniqueKey = `tab-${plan.id || 'plan'}-${index}`;
 
             return (
               <div
-                key={plan.id}
+                key={tabUniqueKey}
                 ref={(el) => {
-                  if (el) tabRefs.current.set(plan.id, el);
-                  else tabRefs.current.delete(plan.id);
+                  if (el && plan.id) tabRefs.current.set(plan.id, el);
+                  else if (plan.id) tabRefs.current.delete(plan.id);
                 }}
                 onMouseDown={(e) => {
                   if (e.button === 0 && !isEditing) {
@@ -618,6 +619,9 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
             <Search className="w-3.5 h-3.5 text-[#86868B] absolute left-2.5 pointer-events-none" />
             <input
               type="text"
+              name="gridSearch"
+              id="gridSearch"
+              autoComplete="on"
               value={gridSearch}
               onChange={(e) => setGridSearch(e.target.value)}
               placeholder="ค้นหา Sec, วิชา, ห้อง..."
@@ -680,12 +684,10 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
         <div className="flex-1 min-h-[580px] grid grid-cols-[44px_repeat(6,1fr)] gap-0 relative">
           
           {/* Time Labels Column (Sticky on Mobile) */}
-          <div className="sticky left-0 bg-[#F5F5F7] z-20 h-full flex flex-col justify-between py-4 text-[9px] sm:text-[9.5px] font-semibold text-[#86868B] select-none font-mono">
+          <div className="sticky left-0 bg-[#F5F5F7] z-20 h-full flex flex-col justify-between py-4 text-[9.5px] sm:text-[10px] font-semibold text-[#86868B] select-none font-mono">
             {TIME_SLOTS.map((time) => (
               <div key={time} className="h-0 flex items-center justify-center -translate-y-1/2">
-                <span className="bg-white/90 backdrop-blur-xs px-0.5 py-0.2 rounded border border-black/[0.06]">
-                  {time}
-                </span>
+                <span>{time}</span>
               </div>
             ))}
           </div>
@@ -726,6 +728,10 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                       const leftStyle = isSingleCol ? '4px' : `calc(${card.leftPercent}% + 2px)`;
                       const widthStyle = isSingleCol ? 'calc(100% - 8px)' : `calc(${card.widthPercent}% - 4px)`;
 
+                      const remark1 = card.section.remark1 && card.section.remark1 !== '-' ? card.section.remark1 : '';
+                      const remark2 = card.section.remark2 && card.section.remark2 !== '-' ? card.section.remark2 : '';
+                      const hasRemark = Boolean(remark1 || remark2);
+
                       if (card.isGhost) {
                         // GHOST PREVIEW CARD (Apple Store Clean Hairline Card)
                         return (
@@ -740,7 +746,7 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                               left: leftStyle,
                               width: widthStyle,
                             }}
-                            className={`absolute min-h-[105px] rounded-[14px] p-2.5 sm:p-3 transition-all duration-200 flex flex-col justify-between overflow-hidden cursor-pointer active:scale-98 bg-white border ${
+                            className={`group absolute min-h-[105px] rounded-[14px] p-2.5 sm:p-3 transition-all duration-200 flex flex-col justify-between cursor-pointer active:scale-98 bg-white border ${
                               isMatch
                                 ? 'border-[#1D1D1F] ring-2 ring-black/10 scale-[1.02] z-30 opacity-100'
                                 : isHighlighted
@@ -797,13 +803,35 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
 
                               {/* Room with Clear Context */}
                               {card.section.room && (
-                                <span className={`${fontClasses.seat} text-[#86868B] font-mono truncate max-w-[75px]`} title={`ห้องเรียน ${card.section.room}`}>
+                                <span className={`${fontClasses.seat} text-[#86868B] font-mono truncate max-w-[75px]`}>
                                   {card.section.room.toLowerCase().startsWith('r') || card.section.room.toLowerCase().startsWith('b') || card.section.room.toLowerCase().startsWith('c')
                                     ? highlightText(card.section.room, gridSearch, false)
                                     : `Room ${highlightText(card.section.room, gridSearch, false)}`}
                                 </span>
                               )}
                             </div>
+
+                            {/* Hover Remark Popover */}
+                            {hasRemark && (
+                              <div
+                                className={`absolute left-1/2 -translate-x-1/2 ${
+                                  card.topPercent < 25 ? 'top-[calc(100%+4px)]' : 'bottom-[calc(100%+4px)]'
+                                } hidden group-hover:flex flex-col items-center gap-0.5 bg-transparent text-[#1D1D1F] text-[11px] px-1 py-0.5 z-[100] pointer-events-none min-w-[140px] max-w-[260px] text-center animate-in fade-in duration-150`}
+                              >
+                                {remark1 && (
+                                  <div className="text-center">
+                                    <span className="font-semibold text-[#86868B] text-[9px] block uppercase tracking-wider">Remark 1</span>
+                                    <span className="font-semibold text-[#1D1D1F] break-words leading-tight">{remark1}</span>
+                                  </div>
+                                )}
+                                {remark2 && (
+                                  <div className={`text-center ${remark1 ? 'pt-0.5' : ''}`}>
+                                    <span className="font-semibold text-[#86868B] text-[9px] block uppercase tracking-wider">Remark 2</span>
+                                    <span className="font-semibold text-[#1D1D1F] break-words leading-tight">{remark2}</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         );
                       } else {
@@ -819,14 +847,13 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                             onMouseEnter={() => handleSetHovered(card.course.id)}
                             onMouseLeave={() => handleSetHovered(null)}
                             onClick={() => onRemoveItem(card.course.id, card.section.sectionNo)}
-                            title="คลิกอีกครั้งเพื่อยกเลิกการเลือกวิชานี้"
                             style={{
                               top: `${card.topPercent}%`,
                               height: `${card.heightPercent}%`,
                               left: leftStyle,
                               width: widthStyle,
                             }}
-                            className={`absolute min-h-[105px] rounded-[14px] p-2.5 sm:p-3 transition-all duration-200 flex flex-col justify-between overflow-hidden cursor-pointer z-20 text-white active:scale-98 ${
+                            className={`group absolute min-h-[105px] rounded-[14px] p-2.5 sm:p-3 transition-all duration-200 flex flex-col justify-between cursor-pointer z-20 text-white active:scale-98 ${
                               conflicting
                                 ? 'bg-[#FF3B30] border-2 border-red-600'
                                 : 'bg-[#0071E3] hover:bg-[#0077ED]'
@@ -910,6 +937,28 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                                 </span>
                               )}
                             </div>
+
+                            {/* Hover Remark Popover */}
+                            {hasRemark && (
+                              <div
+                                className={`absolute left-1/2 -translate-x-1/2 ${
+                                  card.topPercent < 25 ? 'top-[calc(100%+4px)]' : 'bottom-[calc(100%+4px)]'
+                                } hidden group-hover:flex flex-col items-center gap-0.5 bg-transparent text-[#1D1D1F] text-[11px] px-1 py-0.5 z-[100] pointer-events-none min-w-[140px] max-w-[260px] text-center animate-in fade-in duration-150`}
+                              >
+                                {remark1 && (
+                                   <div className="text-center">
+                                     <span className="font-semibold text-[#86868B] text-[9px] block uppercase tracking-wider">Remark 1</span>
+                                     <span className="font-semibold text-[#1D1D1F] break-words leading-tight">{remark1}</span>
+                                   </div>
+                                )}
+                                {remark2 && (
+                                   <div className={`text-center ${remark1 ? 'pt-0.5' : ''}`}>
+                                     <span className="font-semibold text-[#86868B] text-[9px] block uppercase tracking-wider">Remark 2</span>
+                                     <span className="font-semibold text-[#1D1D1F] break-words leading-tight">{remark2}</span>
+                                   </div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         );
                       }
@@ -987,7 +1036,7 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
       {contextMenu && contextMenu.isOpen && (
         <div
           style={{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }}
-          className="fixed z-50 min-w-[150px] bg-white/95 backdrop-blur-md rounded-[12px] border border-black/[0.08] py-1 text-xs animate-in fade-in zoom-in-95 duration-100"
+          className="fixed z-50 min-w-[150px] bg-white/95 backdrop-blur-md rounded-[12px] border border-black/[0.08] py-1 text-xs animate-in fade-in zoom-in-95 duration-100 shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
           onClick={(e) => e.stopPropagation()}
         >
           <button
@@ -997,6 +1046,18 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
             <Edit3 className="w-3.5 h-3.5" />
             <span>เปลี่ยนชื่อแผน</span>
           </button>
+          {onResetPlan && (
+            <button
+              onClick={() => {
+                onResetPlan(contextMenu.planId);
+                setContextMenu(null);
+              }}
+              className="w-full px-3 py-2 text-left text-[#1D1D1F] hover:bg-[#0071E3] hover:text-white flex items-center gap-2 transition-colors cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>รีเซ็ตแผนนี้</span>
+            </button>
+          )}
           {planEntries.length > 1 && (
             <button
               onClick={() => {

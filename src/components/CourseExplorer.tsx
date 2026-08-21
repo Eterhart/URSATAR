@@ -10,6 +10,7 @@ interface CourseExplorerProps {
   searchQuery: string;
   onSearchChange: (q: string) => void;
   onExecuteSearch?: (params: { academicYear: string; semester: string; query: string }) => Promise<{ count: number; missingCodes?: string[] } | null | void> | void;
+  onClearSearch?: () => void;
   isLoading?: boolean;
   formControls?: UrsaFormControl[];
 }
@@ -18,6 +19,7 @@ export const CourseExplorer: React.FC<CourseExplorerProps> = ({
   searchQuery,
   onSearchChange,
   onExecuteSearch,
+  onClearSearch,
   isLoading = false,
   formControls = [],
 }) => {
@@ -67,6 +69,9 @@ export const CourseExplorer: React.FC<CourseExplorerProps> = ({
     onSearchChange('');
     setSearchStatus('idle');
     setMissingCourses([]);
+    if (onClearSearch) {
+      onClearSearch();
+    }
   };
 
   return (
@@ -74,12 +79,29 @@ export const CourseExplorer: React.FC<CourseExplorerProps> = ({
       {/* Component-scoped Loading Overlay: 100% card coverage */}
       {isLoading && (
         <div className="absolute top-0 left-0 w-full h-full z-50 bg-black/45 backdrop-blur-[2px] flex items-center justify-center select-none animate-in fade-in duration-150">
-          <div className="flex items-center gap-3 text-white animate-in zoom-in-95 duration-150">
-            <Loader2 className="w-6 h-6 animate-spin text-[#2997FF]" />
-            <span className="apple-headline text-lg font-semibold tracking-wider text-white">
-              Loading...
-            </span>
-          </div>
+          {/* Authentic Apple iOS 12-bar Activity Indicator */}
+          <svg
+            className="w-7 h-7 animate-spin text-white animate-in zoom-in-95 duration-150"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            {[
+              0.08, 0.16, 0.25, 0.33, 0.42, 0.5, 0.58, 0.67, 0.75, 0.83, 0.92, 1.0,
+            ].map((op, i) => (
+              <rect
+                key={i}
+                x="11"
+                y="1.5"
+                width="2"
+                height="5.5"
+                rx="1"
+                fill="currentColor"
+                opacity={op}
+                transform={`rotate(${i * 30} 12 12)`}
+              />
+            ))}
+          </svg>
         </div>
       )}
 
@@ -150,26 +172,32 @@ export const CourseExplorer: React.FC<CourseExplorerProps> = ({
       </div>
 
       {/* Row 2: รหัสวิชา Textarea */}
-      <form onSubmit={handleSearchSubmit} className="space-y-3">
+      <form onSubmit={handleSearchSubmit} autoComplete="on" className="space-y-3">
         <div className="space-y-1.5">
           <label className="text-[11px] font-semibold text-[#86868B] block apple-subheadline">
             รหัสวิชา
           </label>
 
           <div className="relative">
-            <textarea
-              rows={4}
+            <input
+              type="text"
+              id="courseCodes"
+              name="courseCodes"
+              autoComplete="on"
+              autoCorrect="off"
+              autoCapitalize="characters"
+              spellCheck={false}
               value={localInput}
               onChange={(e) => setLocalInput(e.target.value)}
-              placeholder={"กรอกรหัสวิชา (รองรับหลายบรรทัด / เว้นวรรค) เช่น:\nCS101 CS102\nMA101"}
-              className="w-full p-3.5 bg-[#F5F5F7] text-[#1D1D1F] border border-black/[0.08] rounded-xl text-xs placeholder-[#86868B] focus:outline-none focus:border-[#0071E3] transition-all apple-subheadline font-medium leading-relaxed resize-y"
+              placeholder="กรอกรหัสวิชา เช่น CS101 CS102 MA101"
+              className="w-full h-[108px] pt-[14px] pb-[70px] px-[14px] pr-16 bg-[#F5F5F7] text-[#1D1D1F] border border-black/[0.08] rounded-xl text-xs placeholder-[#86868B] focus:outline-none focus:border-[#0071E3] transition-all apple-subheadline font-semibold"
             />
 
             {localInput && (
               <button
                 type="button"
                 onClick={handleClear}
-                className="absolute right-2.5 top-2.5 text-[11px] text-[#86868B] hover:text-[#1D1D1F] bg-white hover:bg-black/[0.05] border border-black/10 px-2.5 py-0.5 rounded-full font-medium transition-colors cursor-pointer active:scale-95"
+                className="absolute right-2.5 top-2.5 text-[11px] text-[#86868B] hover:text-[#1D1D1F] bg-white hover:bg-black/[0.05] border border-black/10 px-2.5 py-1 rounded-full font-medium transition-colors cursor-pointer active:scale-95"
                 title="ล้างข้อความ"
               >
                 ล้าง
@@ -179,18 +207,15 @@ export const CourseExplorer: React.FC<CourseExplorerProps> = ({
         </div>
 
         {/* Row 3: Status Left + Submit Button Right */}
-        <div className="flex items-center justify-between pt-1">
-          <div className="flex items-center min-h-[28px] max-w-[200px] truncate">
+        <div className="flex items-center justify-between pt-1 gap-3">
+          <div className="flex-1 min-w-0">
             {searchStatus === 'success' && (
-              <span className="text-[#86868B] text-xs font-medium apple-subheadline animate-in fade-in duration-200">
+              <span className="text-[#86868B] text-xs font-medium apple-subheadline animate-in fade-in duration-200 block">
                 ค้นหาสำเร็จ!
               </span>
             )}
             {searchStatus === 'not_found' && (
-              <span
-                className="text-[#86868B] text-xs font-medium apple-subheadline animate-in fade-in duration-200 truncate"
-                title={missingCourses.length > 0 ? `ไม่พบวิชา ${missingCourses.join(', ')}` : 'ไม่พบวิชาที่ค้นหา'}
-              >
+              <span className="text-[#86868B] text-xs font-medium apple-subheadline animate-in fade-in duration-200 leading-relaxed break-words block">
                 {missingCourses.length > 0
                   ? `ไม่พบวิชา ${missingCourses.join(', ')}`
                   : 'ไม่พบวิชาที่ค้นหา'}

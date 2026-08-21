@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { SelectedCourseItem } from '@/types/schedule';
 import { generateUrsaCopyText } from '@/utils/scheduleUtils';
 import { Copy, Check, X } from 'lucide-react';
-import confetti from 'canvas-confetti';
 
 interface CopySecModalProps {
   isOpen: boolean;
@@ -29,15 +28,7 @@ export const CopySecModal: React.FC<CopySecModalProps> = ({
     try {
       await navigator.clipboard.writeText(exportText);
       setCopied(true);
-
-      confetti({
-        particleCount: 70,
-        spread: 60,
-        origin: { y: 0.6 },
-        colors: ['#0071E3', '#34C759', '#1D1D1F', '#86868B'],
-      });
-
-      setTimeout(() => setCopied(false), 2500);
+      setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error('Failed to copy', err);
     }
@@ -53,19 +44,14 @@ export const CopySecModal: React.FC<CopySecModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-black/[0.06] flex items-center justify-between bg-[#F5F5F7]">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-full bg-white border border-black/[0.08] text-[#0071E3]">
-              <Copy className="w-4 h-4" />
-            </div>
-            <h3 className="apple-headline text-[15px] text-[#1D1D1F]">
-              Export รหัสวิชา & Section
-            </h3>
-          </div>
+        <div className="relative px-6 py-4 border-b border-black/[0.06] flex items-center justify-center bg-[#F5F5F7]">
+          <h3 className="apple-headline text-[15px] font-semibold text-[#1D1D1F] text-center">
+            Export รหัสวิชา & Section
+          </h3>
 
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-full bg-black/[0.05] hover:bg-black/[0.1] active:scale-95 flex items-center justify-center text-[#6E6E73] hover:text-[#1D1D1F] transition-all cursor-pointer"
+            className="absolute right-4 top-3.5 w-7 h-7 rounded-full bg-black/[0.05] hover:bg-black/[0.1] active:scale-95 flex items-center justify-center text-[#6E6E73] hover:text-[#1D1D1F] transition-all cursor-pointer"
             title="ปิด"
           >
             <X className="w-3.5 h-3.5" />
@@ -81,24 +67,26 @@ export const CopySecModal: React.FC<CopySecModalProps> = ({
             </pre>
           </div>
 
-          {/* Action Button: Apple Action Blue Pill */}
-          <button
-            onClick={handleCopy}
-            disabled={items.length === 0}
-            className="apple-blue-btn w-full py-3 text-xs tracking-wide transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer active:scale-95"
-          >
-            {copied ? (
-              <>
-                <Check className="w-4 h-4 text-[#34C759]" />
-                <span className="text-white font-bold">คัดลอกสำเร็จแล้ว! 🎉</span>
-              </>
-            ) : (
-              <>
-                <Copy className="w-3.5 h-3.5 text-white" />
-                <span className="apple-subheadline">คัดลอกข้อความไปใช้งาน</span>
-              </>
-            )}
-          </button>
+          {/* Action Button: Flat Grey Pill with Blue Text (No Shadow) */}
+          <div className="flex justify-center pt-1">
+            <button
+              onClick={handleCopy}
+              disabled={items.length === 0}
+              className="w-auto px-6 py-2.5 rounded-full bg-[#F5F5F7] hover:bg-black/[0.08] active:bg-black/[0.12] text-[#0071E3] border border-black/[0.06] text-xs font-semibold tracking-wide transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer active:scale-95"
+            >
+              {copied ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-[#0071E3] stroke-[2.5]" />
+                  <span className="font-semibold text-[#0071E3]">คัดลอกสำเร็จแล้ว</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5 text-[#0071E3]" />
+                  <span className="apple-subheadline text-[#0071E3]">คัดลอกข้อความไปใช้งาน</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

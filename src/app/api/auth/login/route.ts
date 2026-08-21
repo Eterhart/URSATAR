@@ -54,14 +54,14 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     if (error?.message === 'URSA_REJECTED_CREDENTIALS') {
       return NextResponse.json(
-        { error: 'URSA ปฏิเสธ username หรือ password กรุณาตรวจสอบแล้วลองใหม่' },
+        { ok: false, error: 'เข้าสู่ระบบไม่สำเร็จ: รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง' },
         { status: 401 }
       );
     }
 
     console.error('[URSA Login Error]:', error?.message || error);
     return NextResponse.json(
-      { error: 'ไม่สามารถเชื่อมต่อ URSA ได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง' },
+      { ok: false, error: 'เข้าสู่ระบบไม่สำเร็จ: ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ URSA ได้ในขณะนี้' },
       { status: 502 }
     );
   }

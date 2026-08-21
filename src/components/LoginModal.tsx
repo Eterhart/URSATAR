@@ -25,6 +25,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const [isSuccess, setIsSuccess] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isShaking, setIsShaking] = useState(false);
 
   if (!isOpen) return null;
 
@@ -48,10 +49,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         setUsername('');
         setPassword('');
         setLocalError(null);
+        setIsShaking(false);
         onClose();
       }, 1000);
     } else {
-      setLocalError(authError || 'URSA ปฏิเสธ username หรือ password กรุณาตรวจสอบแล้วลองใหม่');
+      setLocalError(authError || 'ชื่อผู้ใช้งาน URSA หรือรหัสผ่าน URSA ไม่ถูกต้อง');
+      setIsShaking(true);
+      setTimeout(() => setIsShaking(false), 500);
     }
   };
 
@@ -122,41 +126,50 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               </h3>
             </div>
 
-            {/* Error Message */}
-            {displayedError && (
-              <div className="p-3 bg-[#FF3B30]/10 border border-[#FF3B30]/20 rounded-2xl flex items-start gap-2.5 text-[#FF3B30] text-xs text-left animate-in fade-in duration-150">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span className="leading-snug font-medium">{displayedError}</span>
-              </div>
-            )}
-
-            {/* Clean Input Fields (No outside labels, placeholders inside) */}
             <div className="space-y-3 text-left">
-              {/* Textbox 1: URSA ID */}
-              <div className="relative">
-                <input
-                  type="text"
-                  required
-                  placeholder="URSA ID"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  disabled={activeLoading}
-                  className="w-full px-4 py-3.5 bg-white border border-black/15 rounded-2xl text-sm text-[#1D1D1F] placeholder-[#86868B] focus:outline-none focus:border-[#0071E3] transition-all apple-subheadline font-normal disabled:opacity-50"
-                />
+              {/* Clean Input Fields with Shake Animation on Error (Only boxes shake) */}
+              <div className={`space-y-3 transition-all ${isShaking ? 'animate-shake' : ''}`}>
+                {/* Textbox 1: URSA ID */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    required
+                    placeholder="URSA ID"
+                    value={username}
+                    onChange={(e) => {
+                      setUsername(e.target.value);
+                      if (localError) setLocalError(null);
+                    }}
+                    disabled={activeLoading}
+                    className="w-full px-4 py-3.5 bg-white border border-black/15 rounded-2xl text-sm text-[#1D1D1F] placeholder-[#86868B] focus:outline-none focus:border-[#0071E3] transition-all apple-subheadline font-normal disabled:opacity-50"
+                  />
+                </div>
+
+                {/* Textbox 2: URSA PASSWORD */}
+                <div className="relative">
+                  <input
+                    type="password"
+                    required
+                    placeholder="URSA PASSWORD"
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (localError) setLocalError(null);
+                    }}
+                    disabled={activeLoading}
+                    className="w-full px-4 py-3.5 bg-white border border-black/15 rounded-2xl text-sm text-[#1D1D1F] placeholder-[#86868B] focus:outline-none focus:border-[#0071E3] transition-all apple-subheadline font-normal disabled:opacity-50"
+                  />
+                </div>
               </div>
 
-              {/* Textbox 2: URSA PASSWORD */}
-              <div className="relative">
-                <input
-                  type="password"
-                  required
-                  placeholder="URSA PASSWORD"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={activeLoading}
-                  className="w-full px-4 py-3.5 bg-white border border-black/15 rounded-2xl text-sm text-[#1D1D1F] placeholder-[#86868B] focus:outline-none focus:border-[#0071E3] transition-all apple-subheadline font-normal disabled:opacity-50"
-                />
-              </div>
+              {/* Centered Error Message under Password Textbox (Static, Does Not Shake) */}
+              {displayedError && (
+                <div className="pt-0.5 px-1 text-center animate-in fade-in duration-150">
+                  <span className="leading-tight font-medium text-[11.5px] sm:text-xs text-[#86868B]">
+                    ชื่อผู้ใช้งาน URSA หรือรหัสผ่าน URSA ไม่ถูกต้อง
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Submit Button */}

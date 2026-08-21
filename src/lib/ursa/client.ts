@@ -143,7 +143,37 @@ export async function loginUrsa(credentials: UrsaLoginCredentials): Promise<stri
 
   const html = await decodeUrsaResponse(response);
 
-  if (/Access Denied|User name.*Password/i.test(html)) {
+  // Check A: If response page still contains login form or access denied
+  const isLoginPage = /inter_passwd|liveid|SetFullId\.cfm|Access Denied|User name.*Password/i.test(html);
+  if (isLoginPage) {
+    throw new Error('URSA_REJECTED_CREDENTIALS');
+  }
+
+  // Check B: Verify session with /remark/remark.cfm to ensure student credentials were truly accepted
+  try {
+    const checkResp = await fetch(`${URSA_BASE_URL}/remark/remark.cfm`, {
+      method: 'GET',
+      headers: {
+        'User-Agent': URSA_USER_AGENT,
+        ...(cookieJar ? { Cookie: cookieJar } : {}),
+      },
+      signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
+    });
+
+    if (checkResp.ok) {
+      const checkHtml = await decodeUrsaResponse(checkResp);
+      const hasStudentData = /Student\s*ID|รหัสนักศึกษา|Student\s*Code|\b1\d{9}\b/i.test(checkHtml);
+      const hasLoginForm = /inter_passwd|liveid|SetFullId\.cfm/i.test(checkHtml);
+
+      if (!hasStudentData || hasLoginForm) {
+        throw new Error('URSA_REJECTED_CREDENTIALS');
+      }
+    }
+  } catch (err: any) {
+    if (err?.message === 'URSA_REJECTED_CREDENTIALS') {
+      throw err;
+    }
+    // If network error during verification check
     throw new Error('URSA_REJECTED_CREDENTIALS');
   }
 

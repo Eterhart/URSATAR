@@ -1,68 +1,94 @@
-# 📅 URSA-Planer (Unofficial)
+# ursa-planer
 
-> **Next-generation Timetable & Course Schedule Planner for Bangkok University (BU) Students**  
-> เว็บแอปพลิเคชันวางแผนและจัดตารางเรียนสำหรับนักศึกษามหาวิทยาลัยกรุงเทพ เชื่อมต่อข้อมูลวิชาและสถานะที่นั่งจากระบบ URSA แบบเรียลไทม์ ด้วยดีไซน์ Apple-inspired UI ที่เรียบหรูและทันสมัย
-
----
-
-## ✨ Features (ฟีเจอร์เด่น)
-
-- 🔐 **Live URSA Authentication & Session**: เข้าสู่ระบบด้วยรหัสนักศึกษาและรหัสผ่าน URSA พร้อมดึงชื่อและรหัสนักศึกษาอัตโนมัติ
-- 🔍 **Live Section & Seat Query**: ค้นหารายวิชาตามปีการศึกษาและภาคเรียน ดึงข้อมูล Section, อาจารย์ผู้สอน, ห้องเรียน, วัน-เวลาสอบ, และจำนวนที่นั่งว่างแบบเรียลไทม์
-- 📊 **Interactive Timetable Grid**: ปฏิทินตารางเรียนแบบ Interactive ลากจัดเรียงแท็บ Plan (Plan A / Plan B / Plan C) และไฮไลต์ช่วงเวลาแบบ Bidirectional Hover
-- ⚠️ **Smart Time Conflict Detection**: ระบบตรวจจับวิชาเรียนเวลาชนกันแบบอัตโนมัติ พร้อมแถบแจ้งเตือนระดับวินาที
-- 🎛️ **Multi-Filter & Sort**: ตัวกรองสถานะที่นั่ง (ทั้งหมด / ว่าง / เกือบเต็ม / เต็ม) และเลือก Section ตามตัวอักษร A-P อย่างง่ายดาย
-- 📋 **One-Click Export & Copy Sec**: คัดลอกรหัสวิชาและ Section เพื่อนำไปใช้ลงทะเบียนในระบบ URSA ได้ทันที พร้อมแอนิเมชัน Confetti
-- 📱 **100% Fully Responsive**: รองรับการใช้งานทั้งบน Mobile, Tablet, iPad Pro และ Desktop พร้อมหน้าจอแนะนำการหมุนแนวนอนบนสมาร์ตโฟน
+**ursa-planer** คือเครื่องมือช่วยวางแผนตารางเรียนสำหรับนักศึกษามหาวิทยาลัยกรุงเทพ (Bangkok University) ที่ดึงข้อมูลรายวิชาจากระบบ URSA มาจัดให้อยู่ในรูปแบบปฏิทินแบบ Interactive เพื่อให้จัดตารางเรียน เปรียบเทียบแผน และตรวจสอบเวลาเรียนชนกันได้สะดวกรวดเร็วยิ่งขึ้น
 
 ---
 
-## 🛠️ Tech Stack
+## ฟีเจอร์หลัก (Features)
 
-- **Framework**: [Next.js 16 (Turbopack, App Router)](https://nextjs.org/)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS, Lucide Icons, Canvas Confetti
-- **Typography**: Apple Unified System Font / SF Pro + Prompt
-- **API Engine**: Next.js Route Handlers (Proxying URSA CFML & decoding windows-874 / UTF-8)
+### 1. ดึงข้อมูลรายวิชาจาก URSA โดยตรง (URSA Integration)
+- เข้าสู่ระบบด้วยบัญชีนักศึกษาเพื่อตรวจสอบข้อมูลวิชาที่ลงทะเบียนไว้
+- ดึงข้อมูล Section, ที่นั่งว่าง, อาจารย์ผู้สอน, ห้องเรียน และวัน-เวลาสอบจากระบบ URSA
+- รองรับการค้นหาหลายวิชาพร้อมกัน (คั่นด้วยการเว้นวรรคหรือขึ้นบรรทัดใหม่)
 
----
+### 2. ปฏิทินตารางเรียน (Interactive Calendar)
+- จัดและเปรียบเทียบตารางเรียนได้หลายแผน (Plan A, Plan B, Plan C)
+- แสดงภาพตัวอย่างวิชาก่อนตัดสินใจเลือกลงตาราง
+- ไฮไลต์รายวิชาทั้งตารางเมื่อชี้เมาส์
+- จัดคอลัมน์ให้อัตโนมัติเมื่อมีหลาย Section อยู่ในช่วงเวลาเดียวกัน
 
-## 🚀 Getting Started (วิธีติดตั้งและรันโปรเจกต์)
+### 3. ค้นหาและตัวกรอง (Search & Filtering)
+- กรองตามสถานะที่นั่ง (ทั้งหมด / ว่าง / เกือบเต็ม / เต็ม)
+- กรอง Section ตามตัวอักษร (A ถึง P)
+- ช่องค้นหาด่วนบนตาราง ค้นหาได้ทั้งรหัสวิชา, เลข Section และห้องเรียน
 
-### 1. Clone the repository
-```bash
-git clone https://github.com/Eterhart/URSA-Planer.git
-cd URSA-Planer
-```
+### 4. การจัดการ Section และตรวจจับเวลาชน (Section Management & Conflicts)
+- ระบบตรวจจับวันและเวลาเรียนที่ซ้อนทับกัน พร้อมแจ้งเตือนทันที
+- เลือกและจัดการหลาย Section ได้พร้อมกัน
+- ซ่อน/แสดง Section ที่ไม่ต้องการออกจากมุมมองปฏิทิน
 
-### 2. Install dependencies
-```bash
-npm install
-```
+### 5. คัดลอกข้อมูลไปลงทะเบียน (Copy for Registration)
+- คัดลอกรหัสวิชาและ Section ในรูปแบบข้อความที่พร้อมนำไปวางในหน้าระบบลงทะเบียนของ URSA ได้ทันที
 
-### 3. Run development server
-```bash
-npm run dev
-```
-
-เปิดบราวเซอร์ไปที่ [http://localhost:3000](http://localhost:3000)
-
-### 4. Build for production
-```bash
-npm run build
-npm run start
-```
+### 6. รองรับการใช้งานทุกอุปกรณ์ (Responsive Design)
+- ปรับแต่งการแสดงผลสำหรับ Desktop, iPad Pro, แท็บเล็ต และสมาร์ตโฟน
+- ตรึงแถบเวลาด้านซ้ายขณะเลื่อนดูตารางบนมือถือ พร้อมคำแนะนำการหมุนหน้าจอแนวนอน
 
 ---
 
-## ⚠️ Disclaimer (ข้อจำกัดความรับผิดชอบ)
+## ข้อจำกัดและข้อจำกัดความรับผิดชอบ (Limitations & Disclaimer)
 
-This project is an **unofficial, student-made community tool** and is **not affiliated with, endorsed by, or connected to Bangkok University (BU)**. All official course registrations and academic records must be conducted directly through the official university URSA system.
+**โปรเจกต์อิสระที่ไม่เป็นทางการ (Unofficial Community Tool)**
 
-> โครงการนี้เป็น **โปรเจกต์อิสระที่ไม่เป็นทางการ (Unofficial)** พัฒนาขึ้นโดยนักศึกษาเพื่ออำนวยความสะดวกในการจัดตารางเรียน ไม่มีความเกี่ยวข้องหรือสังกัดกับทางมหาวิทยาลัยกรุงเทพ การลงทะเบียนเรียนจริงและข้อมูลผลการเรียนอย่างเป็นทางการต้องดำเนินการผ่านระบบ URSA ของมหาวิทยาลัยโดยตรงเท่านั้น
+1. **ไม่เกี่ยวข้องกับมหาวิทยาลัย**: โปรเจกต์นี้พัฒนาขึ้นโดยนักศึกษาเพื่ออำนวยความสะดวกในการจัดตารางเรียน ไม่มีความเกี่ยวข้องหรือสังกัดกับทางมหาวิทยาลัยกรุงเทพ (BU)
+2. **ใช้เพื่อวางแผนเท่านั้น**: เครื่องมือนี้มีไว้สำหรับจำลองและวางแผนตารางเรียน การลงทะเบียนเรียนและการสำรองที่นั่งจริงต้องดำเนินการผ่านระบบ URSA ของมหาวิทยาลัยโดยตรง
+3. **การเข้าถึงข้อมูล**: การดึงข้อมูลรายวิชาขึ้นอยู่กับความพร้อมในการให้บริการของระบบ URSA ต้นทาง
 
 ---
 
-## 📄 License
+## วิธีติดตั้งและเริ่มใช้งาน (Getting Started)
 
-Distributed under the [MIT License](LICENSE).
+### ความต้องการของระบบ
+- [Node.js](https://nodejs.org) เวอร์ชัน 18.18.0 ขึ้นไป
+- `npm`, `pnpm`, หรือ `yarn`
+
+### ขั้นตอนการรันโปรเจกต์
+
+1. **โคลนคลังโค้ด:**
+   ```bash
+   git clone https://github.com/Eterhart/URSA-Planer.git
+   cd URSA-Planer
+   ```
+
+2. **ติดตั้ง Dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **รัน Dev Server:**
+   ```bash
+   npm run dev
+   ```
+   เปิดบราวเซอร์ไปที่ [http://localhost:3000](http://localhost:3000)
+
+4. **Build สำหรับ Production:**
+   ```bash
+   npm run build
+   npm run start
+   ```
+
+---
+
+## สถาปัตยกรรมระบบ (Architecture Overview)
+
+ระบบทำงานเป็น Edge Proxy ระหว่างบราวเซอร์ของผู้ใช้และระบบ ColdFusion ของมหาวิทยาลัย:
+
+* **Authentication Proxy (`/api/auth/login`)**: จัดการ Session Cookie (`CFID`, `CFTOKEN`) เพื่อตรวจสอบสถานะผู้ใช้
+* **Profile Parser (`/api/profile`)**: ดึงข้อมูลจาก `/remark/remark.cfm` และแปลงชุดรหัสอักขระจาก Windows-874 เป็น UTF-8
+* **Section Query (`/api/sections/query`)**: ส่งคำค้นหาไปยัง `/seat/seat1.cfm`, แปลงโครงสร้างตาราง HTML ฝั่ง Server ให้เป็น JSON Data สำหรับแสดงผลบนปฏิทิน
+
+---
+
+## สัญญาอนุญาต (License)
+
+โปรเจกต์นี้เผยแพร่ภายใต้สัญญาอนุญาต [MIT License](./LICENSE)

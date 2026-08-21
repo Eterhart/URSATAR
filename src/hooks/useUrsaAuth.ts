@@ -125,7 +125,7 @@ export function useUrsaAuth(): UseUrsaAuthReturn {
         const data: UrsaLoginResponse = await response.json();
 
         if (!response.ok || !data.ok) {
-          const errMsg = data.error || 'URSA ปฏิเสธ username หรือ password กรุณาตรวจสอบแล้วลองใหม่';
+          const errMsg = data.error || 'เข้าสู่ระบบไม่สำเร็จ: กรุณาตรวจสอบรหัสนักศึกษาและรหัสผ่าน';
           setError(errMsg);
           setIsLoading(false);
           return false;
@@ -136,7 +136,7 @@ export function useUrsaAuth(): UseUrsaAuthReturn {
         setIsLoading(false);
         return true;
       } catch (err: any) {
-        const errMsg = err?.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์';
+        const errMsg = err?.message || 'เข้าสู่ระบบไม่สำเร็จ: เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์';
         setError(errMsg);
         setIsLoading(false);
         return false;

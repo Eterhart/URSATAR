@@ -5,20 +5,25 @@ import { Course, SelectedCourseItem } from '@/types/schedule';
 import { Copy } from 'lucide-react';
 
 interface EnrolledCoursesTableProps {
-  searchedCourses: Course[];
+  searchedCourses?: Course[];
   selectedItems: SelectedCourseItem[];
   onOpenCopyModal?: () => void;
 }
 
 export const EnrolledCoursesTable: React.FC<EnrolledCoursesTableProps> = ({
-  searchedCourses,
   selectedItems,
   onOpenCopyModal,
 }) => {
-  // Enrolled courses present in selectedItems
-  const enrolledCourses = searchedCourses.filter((c) =>
-    selectedItems.some((it) => it.course.id === c.id)
-  );
+  // Deduplicate enrolled items by course ID so each enrolled course is unique
+  const enrolledItems = React.useMemo(() => {
+    const map = new Map<string, SelectedCourseItem>();
+    (selectedItems || []).forEach((it) => {
+      if (it?.course?.id && !map.has(it.course.id)) {
+        map.set(it.course.id, it);
+      }
+    });
+    return Array.from(map.values());
+  }, [selectedItems]);
 
   return (
     <div className="apple-card-light p-3.5 sm:p-5 space-y-4 sm:space-y-5">
@@ -27,7 +32,7 @@ export const EnrolledCoursesTable: React.FC<EnrolledCoursesTableProps> = ({
         <h3 className="apple-headline text-[15px] text-[#1D1D1F] flex items-center gap-2">
           <span>วิชาที่เลือกแล้ว</span>
           <span className="text-xs font-normal text-[#86868B]">
-            {enrolledCourses.length} วิชา
+            {enrolledItems.length} วิชา
           </span>
         </h3>
 
@@ -44,11 +49,10 @@ export const EnrolledCoursesTable: React.FC<EnrolledCoursesTableProps> = ({
       </div>
 
       {/* Main Enrolled Courses Table */}
-      {enrolledCourses.length > 0 ? (
+      {enrolledItems.length > 0 ? (
         <div className="space-y-5">
-          {enrolledCourses.map((course) => {
-            const selectedItem = selectedItems.find((it) => it.course.id === course.id);
-            if (!selectedItem) return null;
+          {enrolledItems.map((selectedItem, index) => {
+            const course = selectedItem.course;
             const sec = selectedItem.section;
             const type = sec.room.toLowerCase().includes('lab') ? 'LAB' : 'LECT';
 
@@ -66,7 +70,7 @@ export const EnrolledCoursesTable: React.FC<EnrolledCoursesTableProps> = ({
                 : 'Sat';
 
             return (
-              <div key={course.id} className="space-y-2">
+              <div key={`${course.id}-${index}`} className="space-y-2">
                 {/* Course Header */}
                 <div className="flex items-baseline gap-2.5 flex-wrap">
                   <span className="font-bold text-sm text-[#1D1D1F] apple-headline">

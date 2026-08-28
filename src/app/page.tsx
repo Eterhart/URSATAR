@@ -13,7 +13,7 @@ import { LoginModal } from '@/components/LoginModal';
 import { RotatePromptOverlay } from '@/components/RotatePromptOverlay';
 import { useUrsaAuth } from '@/hooks/useUrsaAuth';
 import { useUrsaSections } from '@/hooks/useUrsaSections';
-import { detectConflicts } from '@/utils/scheduleUtils';
+import { detectConflicts, ParsedPresetEntry } from '@/utils/scheduleUtils';
 import { LogIn } from 'lucide-react';
 import { SortOption } from '@/components/FilterSortMenu';
 
@@ -74,6 +74,15 @@ export default function HomePage() {
 
   const timetableGridRef = useRef<HTMLDivElement>(null);
 
+  // Save plans to localStorage on update
+  const savePlansToStorage = useCallback((updated: Record<PlanId, PlanData>) => {
+    try {
+      localStorage.setItem(PLANNER_STORAGE_KEY, JSON.stringify(updated));
+    } catch {
+      // Ignore storage write errors
+    }
+  }, []);
+
   // Load plans from localStorage on mount
   useEffect(() => {
     try {
@@ -93,24 +102,31 @@ export default function HomePage() {
               };
             });
             setPlans(converted);
+            savePlansToStorage(converted);
           } else {
-            setPlans(parsed);
+            // Clean, validate and sanitize plans from localStorage
+            const sanitized: Record<PlanId, PlanData> = {};
+            Object.entries(parsed).forEach(([k, v]: [string, any]) => {
+              if (!k || k === 'undefined' || k === 'null' || !v) return;
+              const validId = v.id && v.id !== 'undefined' ? v.id : k;
+              sanitized[validId] = {
+                id: validId,
+                name: v.name && v.name !== 'undefined' ? v.name : `Plan ${validId.replace('plan', '') || 'A'}`,
+                items: Array.isArray(v.items) ? v.items : Array.isArray(v) ? v : [],
+              };
+            });
+
+            if (Object.keys(sanitized).length > 0) {
+              setPlans(sanitized);
+              savePlansToStorage(sanitized);
+            }
           }
         }
       }
     } catch {
       // Keep default plans on storage read failure
     }
-  }, []);
-
-  // Save plans to localStorage on update
-  const savePlansToStorage = useCallback((updated: Record<PlanId, PlanData>) => {
-    try {
-      localStorage.setItem(PLANNER_STORAGE_KEY, JSON.stringify(updated));
-    } catch {
-      // Ignore storage write errors
-    }
-  }, []);
+  }, [savePlansToStorage]);
 
   // Fetch form metadata if authenticated
   useEffect(() => {
@@ -196,7 +212,7 @@ export default function HomePage() {
       name: 'Plan A',
       items: [],
     };
-  const currentItems = currentPlan ? currentPlan.items : [];
+  const currentItems = (currentPlan && Array.isArray(currentPlan.items)) ? currentPlan.items : [];
   const conflicts = detectConflicts(currentItems);
 
   // Compute matched courses (Live URSA courses only)
@@ -320,16 +336,37 @@ export default function HomePage() {
   }, [searchedCourses, hiddenSections, seatFilters, selectedSecLetters]);
 
   const handleAddPlan = () => {
-    const planKeys = Object.keys(plans);
-    const nextLetter = String.fromCharCode(65 + planKeys.length);
-    const nextId = `plan${nextLetter}`;
+    const existingIds = new Set(Object.keys(plans));
+    
+    // Find the first unused letter from A to Z so we never overwrite an existing plan
+    let nextLetter = 'A';
+    let nextId = 'planA';
+    for (let i = 0; i < 26; i++) {
+      const letter = String.fromCharCode(65 + i);
+      const testId = `plan${letter}`;
+      if (!existingIds.has(testId)) {
+        nextLetter = letter;
+        nextId = testId;
+        break;
+      }
+    }
+
+    // Fallback if A-Z are all taken
+    if (existingIds.has(nextId)) {
+      const timestamp = Date.now();
+      nextId = `plan_${timestamp}`;
+      nextLetter = `${existingIds.size + 1}`;
+    }
+
+    const newPlan: PlanData = {
+      id: nextId,
+      name: `Plan ${nextLetter}`,
+      items: [],
+    };
+
     const updated = {
       ...plans,
-      [nextId]: {
-        id: nextId,
-        name: `Plan ${nextLetter}`,
-        items: [],
-      },
+      [nextId]: newPlan,
     };
     setPlans(updated);
     savePlansToStorage(updated);
@@ -337,19 +374,37 @@ export default function HomePage() {
   };
 
   const handleDeletePlan = (id: PlanId, name: string) => {
-    if (Object.keys(plans).length <= 1) {
+    const planKeys = Object.keys(plans).filter((k) => k && k !== 'undefined' && k !== 'null');
+    if (planKeys.length <= 1 && id && id !== 'undefined' && id !== 'null') {
       alert('ต้องมีอย่างน้อย 1 แผนในระบบ');
       return;
     }
 
-    if (window.confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบ ${name}?`)) {
+    const planDisplayName = name || 'แผนนี้';
+    if (window.confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบ ${planDisplayName}?`)) {
       const copy = { ...plans };
       delete copy[id];
+      delete (copy as any)['undefined'];
+      delete (copy as any)['null'];
+      delete (copy as any)[''];
+
+      // Delete any entries that match id or have undefined id
+      Object.keys(copy).forEach((k) => {
+        if (!k || k === 'undefined' || k === 'null' || k === id || copy[k]?.id === id || !copy[k]?.id || copy[k]?.id === 'undefined') {
+          delete copy[k];
+        }
+      });
+
+      // If no plans left, create default Plan A
+      if (Object.keys(copy).length === 0) {
+        copy['planA'] = { id: 'planA', name: 'Plan A', items: [] };
+      }
+
       setPlans(copy);
       savePlansToStorage(copy);
 
-      if (activePlan === id) {
-        const remainingKeys = Object.keys(copy);
+      const remainingKeys = Object.keys(copy);
+      if (!copy[activePlan]) {
         setActivePlan(remainingKeys[0] || 'planA');
       }
     }
@@ -366,6 +421,37 @@ export default function HomePage() {
     };
     setPlans(updated);
     savePlansToStorage(updated);
+  };
+
+  const handleDuplicatePlan = (sourcePlanId: PlanId) => {
+    const sourcePlan = plans[sourcePlanId];
+    if (!sourcePlan) return;
+
+    const existingIds = new Set(Object.keys(plans));
+    let nextId = 'planA';
+    for (let i = 0; i < 26; i++) {
+      const letter = String.fromCharCode(65 + i);
+      const testId = `plan${letter}`;
+      if (!existingIds.has(testId)) {
+        nextId = testId;
+        break;
+      }
+    }
+
+    const newPlanData: PlanData = {
+      id: nextId,
+      name: `${sourcePlan.name} (สำเนา)`,
+      items: Array.isArray(sourcePlan.items) ? [...sourcePlan.items] : [],
+    };
+
+    const updated = {
+      ...plans,
+      [nextId]: newPlanData,
+    };
+
+    setPlans(updated);
+    savePlansToStorage(updated);
+    setActivePlan(nextId);
   };
 
   const handleReorderPlans = (orderedIds: PlanId[]) => {
@@ -427,6 +513,98 @@ export default function HomePage() {
       savePlansToStorage(updated);
     }
   };
+
+  const handleApplyPreset = useCallback(
+    async (planId: PlanId, entries: ParsedPresetEntry[]): Promise<{ appliedCount: number; missing: string[] }> => {
+      if (entries.length === 0) return { appliedCount: 0, missing: [] };
+
+      // Collect all required course codes
+      const neededCodes = Array.from(new Set(entries.map((e) => e.courseCode.toUpperCase())));
+
+      // Check which courses are currently loaded in liveUrsaCourses
+      let currentCourses = [...liveUrsaCourses];
+      const missingCourseCodes = neededCodes.filter(
+        (code) => !currentCourses.some((c) => c.code.toUpperCase().replace(/\s+/g, '') === code.replace(/\s+/g, ''))
+      );
+
+      // If there are missing courses and user is connected, auto-fetch them from URSA
+      if (missingCourseCodes.length > 0 && connected) {
+        try {
+          const academicYear = '68';
+          const semester = '1';
+          const fetchedResults = await searchSections({
+            academicYear,
+            semester,
+            courseCodes: missingCourseCodes,
+            option1: '1',
+          });
+          if (fetchedResults && fetchedResults.length > 0) {
+            currentCourses = [...currentCourses, ...fetchedResults];
+          }
+        } catch {
+          // If fetch fails, continue with available courses
+        }
+      }
+
+      const appliedItems: SelectedCourseItem[] = [];
+      const missingList: string[] = [];
+
+      for (const entry of entries) {
+        const cleanTargetCode = entry.courseCode.toUpperCase().replace(/\s+/g, '');
+        const cleanTargetSec = entry.sectionNo.toUpperCase().trim();
+
+        const course = currentCourses.find(
+          (c) => c.code.toUpperCase().replace(/\s+/g, '') === cleanTargetCode
+        );
+
+        if (!course) {
+          missingList.push(`${entry.courseCode} ${entry.sectionNo}`);
+          continue;
+        }
+
+        const section = course.sections.find(
+          (s) => s.sectionNo.toUpperCase().trim() === cleanTargetSec
+        );
+
+        if (!section) {
+          missingList.push(`${entry.courseCode} ${entry.sectionNo}`);
+          continue;
+        }
+
+        const existingIdx = appliedItems.findIndex((it) => it.course.id === course.id);
+        const newItem: SelectedCourseItem = {
+          course,
+          section,
+          addedAt: Date.now(),
+        };
+
+        if (existingIdx >= 0) {
+          appliedItems[existingIdx] = newItem;
+        } else {
+          appliedItems.push(newItem);
+        }
+      }
+
+      if (appliedItems.length > 0) {
+        setPlans((prev) => {
+          const currentPlanData = prev[planId] || { id: planId, name: 'Plan', items: [] };
+          const updated = {
+            ...prev,
+            [planId]: {
+              ...currentPlanData,
+              items: appliedItems,
+            },
+          };
+          savePlansToStorage(updated);
+          return updated;
+        });
+        setActivePlan(planId);
+      }
+
+      return { appliedCount: appliedItems.length, missing: missingList };
+    },
+    [liveUrsaCourses, connected, searchSections, savePlansToStorage]
+  );
 
   const isFullyLoggedIn = Boolean(connected && (studentId || (studentName && studentName !== 'นักศึกษา')));
 
@@ -507,6 +685,7 @@ export default function HomePage() {
               onAddPlan={handleAddPlan}
               onDeletePlan={handleDeletePlan}
               onRenamePlan={handleRenamePlan}
+              onDuplicatePlan={handleDuplicatePlan}
               onResetPlan={handleResetPlan}
               onReorderPlans={handleReorderPlans}
               isExpanded={isExpanded}
@@ -521,6 +700,8 @@ export default function HomePage() {
               sortOption={sortOption}
               onSortChange={setSortOption}
               onResetAllFilters={handleResetAllFilters}
+              allCourses={liveUrsaCourses}
+              onApplyPreset={handleApplyPreset}
             />
 
             {/* When Expanded: Show the 2 Components smoothly animated directly under Timetable */}

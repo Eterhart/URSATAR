@@ -47,12 +47,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     if (success) {
       setIsSuccess(true);
       setIsFadingOut(false);
-      // After showing Login Successfully text, start smooth fade out:
+      // Wait for Welcome text to rise, hold, and slide down (~1.5s), then start unblurring:
       setTimeout(() => {
         setIsFadingOut(true);
-      }, 1350);
+      }, 1500);
 
-      // Clean up and close after fade out transition completes (precisely 1.75s):
+      // Clean up and close at exactly 2.0s as the background turns completely sharp:
       setTimeout(() => {
         setIsSuccess(false);
         setIsFadingOut(false);
@@ -61,7 +61,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         setLocalError(null);
         setIsShaking(false);
         onClose();
-      }, 1750);
+      }, 2000);
     } else {
       setLocalError(authError || 'ชื่อผู้ใช้งาน URSA หรือรหัสผ่าน URSA ไม่ถูกต้อง');
       setIsShaking(true);
@@ -75,70 +75,43 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   return (
     <div
       onClick={onClose}
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md cursor-pointer select-none transition-opacity duration-[400ms] ease-out ${
-        isFadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100 animate-in fade-in duration-200'
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 cursor-pointer select-none transition-all duration-500 ease-out ${
+        isFadingOut
+          ? 'bg-black/0 backdrop-blur-none opacity-0 pointer-events-none'
+          : 'bg-black/40 backdrop-blur-md opacity-100'
       }`}
     >
       {/* Modal Container */}
       <div className="relative max-w-[440px] w-full cursor-default">
-        {/* Modal Card Content */}
+        {/* Floating Welcome Message Layer */}
+        {isSuccess && (
+          <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+            <h2 className="text-3xl sm:text-4xl text-white font-light tracking-wide animate-welcome-sequence select-none">
+              Welcome
+            </h2>
+          </div>
+        )}
+
+        {/* Modal Card Content (Gently dissolves and fades out without shape jumping) */}
         <div
           onClick={(e) => e.stopPropagation()}
-          className={`${
-            isSuccess
-              ? 'bg-transparent border-none text-white shadow-none p-8 sm:p-10'
-              : 'bg-[#F8F8FA] text-[#1D1D1F] border border-black/[0.12] shadow-[0_24px_64px_rgba(0,0,0,0.22),0_4px_12px_rgba(0,0,0,0.06)]'
-          } rounded-[22px] w-full overflow-hidden transform animate-in zoom-in-95 duration-200 text-center`}
+          className={`bg-[#F8F8FA] text-[#1D1D1F] border border-black/[0.12] shadow-[0_24px_64px_rgba(0,0,0,0.22),0_4px_12px_rgba(0,0,0,0.06)] rounded-[22px] w-full overflow-hidden transition-all duration-400 ease-out text-center ${
+            isSuccess ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100'
+          }`}
         >
-          {isSuccess ? (
-            <div className="py-12 text-center space-y-3">
-              {/* White Circular Progress Filling Clockwise */}
-              <div className="relative w-14 h-14 mx-auto flex items-center justify-center">
-                <svg className="w-14 h-14 -rotate-90" viewBox="0 0 56 56">
-                  {/* Subtle background track */}
-                  <circle
-                    cx="28"
-                    cy="28"
-                    r="25"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    className="text-white/20"
-                  />
-                  {/* Clockwise Progress Stroke Fill */}
-                  <circle
-                    cx="28"
-                    cy="28"
-                    r="25"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    className="text-white animate-fill-circle"
-                  />
-                </svg>
-                {/* White Checkmark in Center */}
-                <Check className="w-6 h-6 text-white stroke-[2.5] absolute animate-check-pop" />
-              </div>
-              <h4 className="apple-subheadline text-xl text-white font-light tracking-wide pt-1 animate-fade-slide-up">
-                Login Successfully
-              </h4>
-            </div>
-          ) : (
-            <div>
-              {/* macOS Header Bar */}
-              <div className="flex items-center justify-between px-5 py-3 border-b border-black/[0.08] bg-white/70 backdrop-blur-md">
-                <h3 className="font-bold text-[15.5px] text-[#1D1D1F] tracking-tight">
-                  Sign In
-                </h3>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-3 py-1 bg-white hover:bg-[#F2F2F7] active:bg-[#E5E5EA] border border-black/15 rounded-[7px] text-xs font-normal text-[#1D1D1F] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all cursor-pointer"
-                >
-                  Cancel
-                </button>
-              </div>
+          {/* macOS Header Bar */}
+          <div className="flex items-center justify-between px-5 py-3 border-b border-black/[0.08] bg-white/70 backdrop-blur-md">
+            <h3 className="font-bold text-[15.5px] text-[#1D1D1F] tracking-tight">
+              Sign In
+            </h3>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-3 py-1 bg-white hover:bg-[#F2F2F7] active:bg-[#E5E5EA] border border-black/15 rounded-[7px] text-xs font-normal text-[#1D1D1F] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all cursor-pointer"
+            >
+              Cancel
+            </button>
+          </div>
 
               {/* Form Body */}
               <form onSubmit={handleFormSubmit} autoComplete="on" className="p-6 sm:p-7 space-y-5">
@@ -179,7 +152,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                           if (localError) setLocalError(null);
                         }}
                         disabled={activeLoading}
-                        className="w-full px-3.5 py-2.5 bg-white border border-black/15 rounded-xl text-sm text-[#1D1D1F] placeholder-[#86868B] focus:outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/15 transition-all font-normal disabled:opacity-50"
+                        className="w-full px-3.5 py-2.5 bg-white border border-black/15 rounded-xl text-sm text-[#1D1D1F] placeholder-[#86868B] focus:outline-none focus:border-black/30 transition-all font-normal disabled:opacity-50"
                       />
                     </div>
 
@@ -198,7 +171,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                           if (localError) setLocalError(null);
                         }}
                         disabled={activeLoading}
-                        className="w-full pl-3.5 pr-10 py-2.5 bg-white border border-black/15 rounded-xl text-sm text-[#1D1D1F] placeholder-[#86868B] focus:outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/15 transition-all font-normal disabled:opacity-50"
+                        className="w-full pl-3.5 pr-10 py-2.5 bg-white border border-black/15 rounded-xl text-sm text-[#1D1D1F] placeholder-[#86868B] focus:outline-none focus:border-black/30 transition-all font-normal disabled:opacity-50"
                       />
                       {password && (
                         <button
@@ -274,9 +247,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 </div>
               </form>
             </div>
-          )}
+          </div>
         </div>
-      </div>
-    </div>
-  );
-};
+      );
+    };

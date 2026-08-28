@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { PlanId } from '@/types/schedule';
-import { ChevronDown, Search, Loader2 } from 'lucide-react';
+import { ChevronDown, Search, Loader2, X } from 'lucide-react';
 import { UrsaFormControl } from '@/types/ursa';
 
 interface CourseExplorerProps {
@@ -122,7 +122,7 @@ export const CourseExplorer: React.FC<CourseExplorerProps> = ({
             <select
               value={academicYear}
               onChange={(e) => setAcademicYear(e.target.value)}
-              className="w-full bg-[#F5F5F7] text-[#1D1D1F] text-xs font-semibold px-3 py-2.5 rounded-xl border border-black/[0.08] focus:outline-none focus:border-[#0071E3] appearance-none cursor-pointer pr-8 transition-all"
+              className="w-full bg-[#F5F5F7] text-[#1D1D1F] text-xs font-semibold px-3 py-2.5 rounded-xl border border-black/[0.08] focus:outline-none focus:border-black/[0.2] appearance-none cursor-pointer pr-8 transition-all"
             >
               {yearControl?.options && yearControl.options.length > 0 ? (
                 yearControl.options.map((opt) => (
@@ -150,7 +150,7 @@ export const CourseExplorer: React.FC<CourseExplorerProps> = ({
             <select
               value={semester}
               onChange={(e) => setSemester(e.target.value)}
-              className="w-full bg-[#F5F5F7] text-[#1D1D1F] text-xs font-semibold px-3 py-2.5 rounded-xl border border-black/[0.08] focus:outline-none focus:border-[#0071E3] appearance-none cursor-pointer pr-8 transition-all"
+              className="w-full bg-[#F5F5F7] text-[#1D1D1F] text-xs font-semibold px-3 py-2.5 rounded-xl border border-black/[0.08] focus:outline-none focus:border-black/[0.2] appearance-none cursor-pointer pr-8 transition-all"
             >
               {semControl?.options && semControl.options.length > 0 ? (
                 semControl.options.map((opt) => (
@@ -190,17 +190,17 @@ export const CourseExplorer: React.FC<CourseExplorerProps> = ({
               value={localInput}
               onChange={(e) => setLocalInput(e.target.value)}
               placeholder="กรอกรหัสวิชา เช่น CS101 CS102 MA101"
-              className="w-full h-[108px] pt-[14px] pb-[70px] px-[14px] pr-16 bg-[#F5F5F7] text-[#1D1D1F] border border-black/[0.08] rounded-xl text-xs placeholder-[#86868B] focus:outline-none focus:border-[#0071E3] transition-all apple-subheadline font-semibold"
+              className="w-full h-[108px] pt-[14px] pb-[70px] px-[14px] pr-16 bg-[#F5F5F7] text-[#1D1D1F] border border-black/[0.08] rounded-xl text-xs placeholder-[#86868B] focus:outline-none focus:border-black/[0.2] transition-all apple-subheadline font-semibold"
             />
 
             {localInput && (
               <button
                 type="button"
                 onClick={handleClear}
-                className="absolute right-2.5 top-2.5 text-[11px] text-[#86868B] hover:text-[#1D1D1F] bg-white hover:bg-black/[0.05] border border-black/10 px-2.5 py-1 rounded-full font-medium transition-colors cursor-pointer active:scale-95"
+                className="absolute right-2.5 top-2.5 w-5 h-5 rounded-full bg-black/10 hover:bg-black/20 text-[#1D1D1F]/70 hover:text-[#1D1D1F] flex items-center justify-center transition-all cursor-pointer active:scale-90"
                 title="ล้างข้อความ"
               >
-                ล้าง
+                <X className="w-3 h-3" />
               </button>
             )}
           </div>

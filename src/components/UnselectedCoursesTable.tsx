@@ -37,64 +37,71 @@ const sortSections = (sections: Section[], sortState: SortState): Section[] => {
   if (!sortState.key) return sections;
 
   return [...sections].sort((a, b) => {
-    let comparison = 0;
-
     switch (sortState.key) {
       case 'section': {
         const secA = a.sectionNo || '';
         const secB = b.sectionNo || '';
-        comparison = secA.localeCompare(secB, undefined, { numeric: true, sensitivity: 'base' });
-        break;
+        const comp = secA.localeCompare(secB, undefined, { numeric: true, sensitivity: 'base' });
+        return sortState.direction === 'asc' ? comp : -comp;
       }
       case 'seat': {
-        comparison = (a.availableSeats ?? 0) - (b.availableSeats ?? 0);
-        break;
+        const availA = a.availableSeats ?? 0;
+        const availB = b.availableSeats ?? 0;
+        const totalA = a.totalSeats ?? 0;
+        const totalB = b.totalSeats ?? 0;
+
+        if (availA !== availB) {
+          return sortState.direction === 'asc' ? availA - availB : availB - availA;
+        }
+        // เมื่อที่นั่งเหลือเท่ากัน (เช่น เต็ม 0 ที่นั่งทั้งคู่): เรียงตามความจุจากน้อยไปมากเสมอ (เอาเต็มน้อยสุดขึ้นก่อน เช่น 37, 38, 39, 40, 41)
+        if (totalA !== totalB) {
+          return totalA - totalB;
+        }
+        return (a.sectionNo || '').localeCompare(b.sectionNo || '', undefined, { numeric: true, sensitivity: 'base' });
       }
       case 'status': {
-        comparison = (a.status || '').localeCompare(b.status || '');
-        break;
+        const comp = (a.status || '').localeCompare(b.status || '');
+        return sortState.direction === 'asc' ? comp : -comp;
       }
       case 'type': {
         const typeA = a.room.toLowerCase().includes('lab') ? 'LAB' : 'LECT';
         const typeB = b.room.toLowerCase().includes('lab') ? 'LAB' : 'LECT';
-        comparison = typeA.localeCompare(typeB);
-        break;
+        const comp = typeA.localeCompare(typeB);
+        return sortState.direction === 'asc' ? comp : -comp;
       }
       case 'day': {
         const dayA = DAY_WEIGHTS[a.day] || 99;
         const dayB = DAY_WEIGHTS[b.day] || 99;
-        comparison = dayA - dayB;
-        break;
+        const comp = dayA - dayB;
+        return sortState.direction === 'asc' ? comp : -comp;
       }
       case 'time': {
-        comparison = (a.startTime || '').localeCompare(b.startTime || '');
-        break;
+        const comp = (a.startTime || '').localeCompare(b.startTime || '');
+        return sortState.direction === 'asc' ? comp : -comp;
       }
       case 'room': {
-        comparison = (a.room || '').localeCompare(b.room || '');
-        break;
+        const comp = (a.room || '').localeCompare(b.room || '');
+        return sortState.direction === 'asc' ? comp : -comp;
       }
       case 'remark2': {
-        comparison = (a.remark2 || '').localeCompare(b.remark2 || '');
-        break;
+        const comp = (a.remark2 || '').localeCompare(b.remark2 || '');
+        return sortState.direction === 'asc' ? comp : -comp;
       }
       case 'remark1': {
-        comparison = (a.remark1 || '').localeCompare(b.remark1 || '');
-        break;
+        const comp = (a.remark1 || '').localeCompare(b.remark1 || '');
+        return sortState.direction === 'asc' ? comp : -comp;
       }
       case 'examination': {
-        comparison = (a.examination || '').localeCompare(b.examination || '');
-        break;
+        const comp = (a.examination || '').localeCompare(b.examination || '');
+        return sortState.direction === 'asc' ? comp : -comp;
       }
       case 'restriction': {
-        comparison = (a.restriction || '').localeCompare(b.restriction || '');
-        break;
+        const comp = (a.restriction || '').localeCompare(b.restriction || '');
+        return sortState.direction === 'asc' ? comp : -comp;
       }
       default:
-        comparison = 0;
+        return 0;
     }
-
-    return sortState.direction === 'asc' ? comparison : -comparison;
   });
 };
 
@@ -137,10 +144,16 @@ export const UnselectedCoursesTable: React.FC<UnselectedCoursesTableProps> = ({
   onResetAllFilters,
 }) => {
   const [sortState, setSortState] = useState<SortState>({ key: null, direction: 'asc' });
-  // Courses matching search query that have NOT yet been selected in the active plan
-  const unselectedCourses = searchedCourses.filter(
-    (c) => !selectedItems.some((it) => it.course.id === c.id)
-  );
+  // Courses matching search query that have NOT yet been selected in the active plan (deduplicated by course ID)
+  const unselectedCourses = useMemo(() => {
+    const map = new Map<string, Course>();
+    (searchedCourses || []).forEach((c) => {
+      if (c?.id && !map.has(c.id) && !selectedItems.some((it) => it.course.id === c.id)) {
+        map.set(c.id, c);
+      }
+    });
+    return Array.from(map.values());
+  }, [searchedCourses, selectedItems]);
 
   // Main table drag to select state
   const [isDragging, setIsDragging] = useState(false);
@@ -457,6 +470,9 @@ export const UnselectedCoursesTable: React.FC<UnselectedCoursesTableProps> = ({
       <div className="flex items-center justify-between pb-2.5 border-b border-black/[0.06] flex-wrap gap-2 relative z-20">
         <h3 className="apple-headline text-[15px] text-[#86868B] flex items-center gap-2">
           <span>วิชาที่ยังไม่ได้เลือก</span>
+          <span className="text-xs font-normal text-[#86868B]">
+            {unselectedCourses.length} วิชา
+          </span>
         </h3>
 
         <div className="flex items-center gap-3 flex-wrap">
@@ -470,13 +486,13 @@ export const UnselectedCoursesTable: React.FC<UnselectedCoursesTableProps> = ({
       {/* Main Unselected Courses Table */}
       {unselectedCourses.length > 0 ? (
         <div className="space-y-5">
-          {unselectedCourses.map((course) => {
+          {unselectedCourses.map((course, index) => {
             const courseHiddenCount = course.sections.filter(
               (s) => hiddenSections[`${course.id}_${s.sectionNo}`]
             ).length;
 
             return (
-              <div key={course.id} className="space-y-2">
+              <div key={`${course.id}-${index}`} className="space-y-2">
                 {/* Course Header */}
                 <div className="flex items-center justify-between py-1">
                   <div className="flex items-center gap-2">
@@ -574,9 +590,21 @@ export const UnselectedCoursesTable: React.FC<UnselectedCoursesTableProps> = ({
                             (b.sectionNo || '').localeCompare(a.sectionNo || '', undefined, { numeric: true })
                           );
                         } else if (sortOption === 'seats-desc') {
-                          displayedSections = [...displayedSections].sort((a, b) => (b.availableSeats ?? 0) - (a.availableSeats ?? 0));
+                          displayedSections = [...displayedSections].sort((a, b) => {
+                            const diff = (b.availableSeats ?? 0) - (a.availableSeats ?? 0);
+                            if (diff !== 0) return diff;
+                            const totalDiff = (a.totalSeats ?? 0) - (b.totalSeats ?? 0);
+                            if (totalDiff !== 0) return totalDiff;
+                            return (a.sectionNo || '').localeCompare(b.sectionNo || '', undefined, { numeric: true });
+                          });
                         } else if (sortOption === 'seats-asc') {
-                          displayedSections = [...displayedSections].sort((a, b) => (a.availableSeats ?? 0) - (b.availableSeats ?? 0));
+                          displayedSections = [...displayedSections].sort((a, b) => {
+                            const diff = (a.availableSeats ?? 0) - (b.availableSeats ?? 0);
+                            if (diff !== 0) return diff;
+                            const totalDiff = (a.totalSeats ?? 0) - (b.totalSeats ?? 0);
+                            if (totalDiff !== 0) return totalDiff;
+                            return (a.sectionNo || '').localeCompare(b.sectionNo || '', undefined, { numeric: true });
+                          });
                         } else if (sortOption === 'day-time') {
                           displayedSections = [...displayedSections].sort((a, b) => {
                             const dDiff = (DAY_WEIGHTS[a.day] || 99) - (DAY_WEIGHTS[b.day] || 99);
@@ -688,7 +716,7 @@ export const UnselectedCoursesTable: React.FC<UnselectedCoursesTableProps> = ({
           })}
         </div>
       ) : (
-        <div className="py-6 px-4 text-xs text-[#86868B] bg-[#F5F5F7] rounded-[14px] border border-black/[0.04] text-center apple-subheadline">
+        <div className="py-6 px-4 text-xs text-[#86868B] text-center apple-subheadline">
           ✓ คุณเลือกครบทุกวิชาในรายการค้นหาแล้ว
         </div>
       )}

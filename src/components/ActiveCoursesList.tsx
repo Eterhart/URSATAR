@@ -25,10 +25,45 @@ export const ActiveCoursesList: React.FC<ActiveCoursesListProps> = ({
   hiddenSections = {},
   onToggleHideSections,
 }) => {
-  if (searchedCourses.length === 0) return null;
+  // Deduplicate courses by course ID
+  const uniqueCourses = React.useMemo(() => {
+    const map = new Map<string, Course>();
+    (searchedCourses || []).forEach((c) => {
+      if (c?.id && !map.has(c.id)) {
+        map.set(c.id, c);
+      }
+    });
+    return Array.from(map.values());
+  }, [searchedCourses]);
+
+  const listContainerRef = React.useRef<HTMLDivElement>(null);
+  const itemRefs = React.useRef<Record<string, HTMLDivElement | null>>({});
+  const isMouseInsideListRef = React.useRef(false);
+
+  // Auto-scroll hovered course smoothly to the top ONLY when hovering cards on the Calendar
+  React.useEffect(() => {
+    if (isMouseInsideListRef.current) return;
+
+    if (hoveredCourseId && itemRefs.current[hoveredCourseId] && listContainerRef.current) {
+      const container = listContainerRef.current;
+      const target = itemRefs.current[hoveredCourseId];
+      if (target) {
+        const containerTop = container.getBoundingClientRect().top;
+        const targetTop = target.getBoundingClientRect().top;
+        const offset = targetTop - containerTop + container.scrollTop;
+
+        container.scrollTo({
+          top: Math.max(0, offset - 12),
+          behavior: 'smooth',
+        });
+      }
+    }
+  }, [hoveredCourseId]);
+
+  if (uniqueCourses.length === 0) return null;
 
   return (
-    <div className="apple-card-light p-3.5 sm:p-5 space-y-4">
+    <div className="apple-card-light p-3.5 sm:p-5 space-y-4 relative overflow-hidden rounded-[18px] w-full">
       {/* Header with Title + Reset Button (Left) and Copy Code & Sec (Far Right) */}
       <div className="flex items-center justify-between pb-2 border-b border-black/[0.06] gap-2 flex-wrap">
         <div className="flex items-center gap-2">
@@ -36,7 +71,7 @@ export const ActiveCoursesList: React.FC<ActiveCoursesListProps> = ({
             วิชาที่แสดงอยู่ ณ ขณะนี้
           </h4>
           <span className="text-xs font-normal text-[#86868B]">
-            {searchedCourses.length} วิชา
+            {uniqueCourses.length} วิชา
           </span>
           {onResetPlan && selectedItems.length > 0 && (
             <button
@@ -64,8 +99,20 @@ export const ActiveCoursesList: React.FC<ActiveCoursesListProps> = ({
       </div>
 
       {/* List of Courses with Bidirectional Hover Highlight & Hide in Calendar Toggle */}
-      <div className="space-y-2.5">
-        {searchedCourses.map((course) => {
+      <div
+        ref={listContainerRef}
+        onMouseEnter={() => {
+          isMouseInsideListRef.current = true;
+        }}
+        onMouseLeave={() => {
+          isMouseInsideListRef.current = false;
+        }}
+        onTouchStart={() => {
+          isMouseInsideListRef.current = true;
+        }}
+        className="space-y-2 max-h-[480px] overflow-y-auto py-0.5 scroll-smooth no-scrollbar w-full"
+      >
+        {uniqueCourses.map((course, index) => {
           const selectedItem = selectedItems.find((it) => it.course.id === course.id);
           const isEnrolled = !!selectedItem;
           const isHighlighted = hoveredCourseId === course.id;
@@ -77,15 +124,18 @@ export const ActiveCoursesList: React.FC<ActiveCoursesListProps> = ({
 
           return (
             <div
-              key={course.id}
+              key={`${course.id}-${index}`}
+              ref={(el) => {
+                itemRefs.current[course.id] = el;
+              }}
               onMouseEnter={() => onHoverCourse && onHoverCourse(course.id)}
               onMouseLeave={() => onHoverCourse && onHoverCourse(null)}
-              className={`px-4 py-3.5 rounded-xl transition-all duration-200 flex items-center justify-between gap-3 cursor-pointer select-none ${
+              className={`w-full px-3.5 py-3 rounded-xl transition-all duration-150 ease-out flex items-center justify-between gap-3 cursor-pointer select-none ${
                 allHidden
-                  ? 'bg-black/[0.02] opacity-50'
+                  ? 'bg-black/[0.02] opacity-40'
                   : isHighlighted
-                  ? 'bg-[#0071E3]/[0.12] scale-[1.01]'
-                  : 'bg-[#F5F5F7] hover:bg-black/[0.05]'
+                  ? 'bg-[#F5F5F7] shadow-xs'
+                  : 'bg-[#F5F5F7] hover:bg-black/[0.03]'
               }`}
             >
               {/* Left: Eye Button + Course Code & Info */}
@@ -114,10 +164,10 @@ export const ActiveCoursesList: React.FC<ActiveCoursesListProps> = ({
                 )}
 
                 <span
-                  className={`text-xs shrink-0 transition-colors apple-subheadline font-medium ${
+                  className={`text-xs shrink-0 apple-subheadline font-medium transition-colors ${
                     allHidden
                       ? 'line-through text-[#86868B]'
-                      : isHighlighted || isEnrolled
+                      : isEnrolled
                       ? 'text-[#0071E3]'
                       : 'text-[#1D1D1F]'
                   }`}
@@ -127,12 +177,12 @@ export const ActiveCoursesList: React.FC<ActiveCoursesListProps> = ({
 
                 <div className="min-w-0">
                   <p
-                    className={`text-xs font-medium truncate apple-subheadline leading-tight transition-colors ${
+                    className={`text-xs truncate apple-subheadline font-medium leading-tight transition-colors ${
                       allHidden
                         ? 'line-through text-[#86868B]'
-                        : isHighlighted || isEnrolled
+                        : isEnrolled
                         ? 'text-[#0071E3]'
-                        : 'text-[#1D1D1F]'
+                        : 'text-[#1D1D1F]/80'
                     }`}
                   >
                     {course.nameEn}
@@ -140,14 +190,14 @@ export const ActiveCoursesList: React.FC<ActiveCoursesListProps> = ({
                 </div>
               </div>
 
-              {/* Right: Status Pill */}
+              {/* Right: Status Badge (Transparent with Blue Stroke & Blue Text) */}
               <div className="shrink-0 flex items-center">
                 {isEnrolled ? (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-medium bg-transparent border border-[#0071E3] text-[#0071E3] leading-normal">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium apple-subheadline bg-transparent border border-[#0071E3] text-[#0071E3] leading-normal">
                     Sec {selectedItem.section.sectionNo}
                   </span>
                 ) : (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-medium bg-[#F5F5F7] text-[#86868B] border border-[#E5E5EA] leading-normal">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium apple-subheadline bg-white text-[#86868B] border border-black/[0.06] leading-normal">
                     ยังไม่เลือก
                   </span>
                 )}

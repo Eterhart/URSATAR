@@ -101,3 +101,42 @@ export const generateUrsaCopyText = (items: SelectedCourseItem[], planName: stri
 
   return [header, ...lines].join('\n');
 };
+
+export interface ParsedPresetEntry {
+  courseCode: string;
+  sectionNo: string;
+}
+
+export const parseUrsaPresetText = (rawText: string): ParsedPresetEntry[] => {
+  if (!rawText || !rawText.trim()) return [];
+
+  const lines = rawText.split('\n');
+  const results: ParsedPresetEntry[] = [];
+  const seen = new Set<string>();
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('+') || trimmed.startsWith('#')) continue;
+
+    // Match course code (2-4 uppercase/alphanumeric letters + 3-4 digits, e.g., CS446, EN103, ITE221, CS 446)
+    const codeMatch = trimmed.match(/\b([A-Za-z]{2,4})\s*(\d{3,4}[A-Za-z]?)\b/);
+    if (!codeMatch) continue;
+
+    const fullCode = `${codeMatch[1]}${codeMatch[2]}`.toUpperCase().replace(/\s+/g, '');
+    const remainder = trimmed.slice((codeMatch.index || 0) + codeMatch[0].length);
+
+    // Look for section in remainder or line (e.g. ": 427A :", "/ 427A", "Sec 427A", "427A")
+    const secMatch = remainder.match(/(?:[:/,\-\s]+|\bsec\b\s*)([0-9]{2,4}[A-Za-z]?|[A-Za-z][0-9]{2,4})\b/i);
+    if (!secMatch) continue;
+
+    const sectionNo = secMatch[1].toUpperCase().trim();
+    const key = `${fullCode}_${sectionNo}`;
+
+    if (!seen.has(key)) {
+      seen.add(key);
+      results.push({ courseCode: fullCode, sectionNo });
+    }
+  }
+
+  return results;
+};

@@ -103,7 +103,7 @@ export const FilterSortMenu: React.FC<FilterSortMenuProps> = ({
           {/* Section 1: สถานะที่นั่ง (Primary Filter) */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="font-bold text-[13px] text-[#1D1D1F] tracking-tight">
+              <span className="font-bold text-[13px] text-[#1D1D1F] apple-headline tracking-tight">
                 สถานะที่นั่ง
               </span>
               <div className="flex items-center gap-0.5 -mr-1">
@@ -128,48 +128,71 @@ export const FilterSortMenu: React.FC<FilterSortMenuProps> = ({
               </div>
             </div>
 
-            {/* Segmented Control: ทั้งหมด / ที่นั่งยังไม่เต็ม / ที่นั่งเต็ม */}
-            <div className="grid grid-cols-3 gap-1 p-1 bg-[#F2F2F7] rounded-[12px] border border-black/[0.04] text-[11px]">
-              <button
-                type="button"
-                onClick={() => onToggleSeatFilter('all')}
-                className={`py-1.5 rounded-[8px] text-center transition-all cursor-pointer ${
-                  seatFilters['not-full'] && seatFilters.full
-                    ? 'bg-white text-[#1D1D1F] font-bold shadow-[0_1px_3px_rgba(0,0,0,0.1)] border border-black/[0.04]'
-                    : 'text-[#86868B] hover:text-[#1D1D1F] font-medium'
-                }`}
-              >
-                ทั้งหมด
-              </button>
-              <button
-                type="button"
-                onClick={() => onToggleSeatFilter('not-full')}
-                className={`py-1.5 rounded-[8px] text-center transition-all cursor-pointer truncate px-1 ${
-                  seatFilters['not-full'] && !seatFilters.full
-                    ? 'bg-white text-[#1D1D1F] font-bold shadow-[0_1px_3px_rgba(0,0,0,0.1)] border border-black/[0.04]'
-                    : 'text-[#86868B] hover:text-[#1D1D1F] font-medium'
-                }`}
-              >
-                ที่นั่งยังไม่เต็ม
-              </button>
-              <button
-                type="button"
-                onClick={() => onToggleSeatFilter('full')}
-                className={`py-1.5 rounded-[8px] text-center transition-all cursor-pointer truncate px-1 ${
-                  seatFilters.full && !seatFilters['not-full']
-                    ? 'bg-white text-[#1D1D1F] font-bold shadow-[0_1px_3px_rgba(0,0,0,0.1)] border border-black/[0.04]'
-                    : 'text-[#86868B] hover:text-[#1D1D1F] font-medium'
-                }`}
-              >
-                ที่นั่งเต็ม
-              </button>
-            </div>
+            {/* Segmented Control (Apple HIG macOS/iOS Style) */}
+            {(() => {
+              const isAllActive = seatFilters['not-full'] && seatFilters.full;
+              const isNotFullActive = seatFilters['not-full'] && !seatFilters.full;
+              const isFullActive = seatFilters.full && !seatFilters['not-full'];
+
+              return (
+                <div className="flex items-center bg-[#767680]/12 p-[2.5px] rounded-[8px] text-[11.5px] relative">
+                  {/* Tab 1: ทั้งหมด */}
+                  <button
+                    type="button"
+                    onClick={() => onToggleSeatFilter('all')}
+                    className={`flex-1 py-1 px-2 rounded-[6px] text-center transition-all duration-200 cursor-pointer ${
+                      isAllActive
+                        ? 'bg-white text-[#1D1D1F] font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.12),0_0.5px_1px_rgba(0,0,0,0.06)]'
+                        : 'text-[#1D1D1F]/70 hover:text-[#1D1D1F] font-normal'
+                    }`}
+                  >
+                    ทั้งหมด
+                  </button>
+
+                  {/* Divider between Tab 1 & Tab 2 (only if neither is active) */}
+                  {!isAllActive && !isNotFullActive && (
+                    <span className="h-3 w-[1px] bg-black/15 shrink-0 mx-[1px]" />
+                  )}
+
+                  {/* Tab 2: ที่นั่งยังไม่เต็ม */}
+                  <button
+                    type="button"
+                    onClick={() => onToggleSeatFilter('not-full')}
+                    className={`flex-1 py-1 px-1.5 rounded-[6px] text-center transition-all duration-200 cursor-pointer truncate ${
+                      isNotFullActive
+                        ? 'bg-white text-[#1D1D1F] font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.12),0_0.5px_1px_rgba(0,0,0,0.06)]'
+                        : 'text-[#1D1D1F]/70 hover:text-[#1D1D1F] font-normal'
+                    }`}
+                  >
+                    ที่นั่งยังไม่เต็ม
+                  </button>
+
+                  {/* Divider between Tab 2 & Tab 3 (only if neither is active) */}
+                  {!isNotFullActive && !isFullActive && (
+                    <span className="h-3 w-[1px] bg-black/15 shrink-0 mx-[1px]" />
+                  )}
+
+                  {/* Tab 3: ที่นั่งเต็ม */}
+                  <button
+                    type="button"
+                    onClick={() => onToggleSeatFilter('full')}
+                    className={`flex-1 py-1 px-1.5 rounded-[6px] text-center transition-all duration-200 cursor-pointer truncate ${
+                      isFullActive
+                        ? 'bg-white text-[#1D1D1F] font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.12),0_0.5px_1px_rgba(0,0,0,0.06)]'
+                        : 'text-[#1D1D1F]/70 hover:text-[#1D1D1F] font-normal'
+                    }`}
+                  >
+                    ที่นั่งเต็ม
+                  </button>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Section 2: Section (Options Grid) */}
           <div className="space-y-2 pt-1 border-t border-black/[0.06]">
             <div className="flex items-center justify-between">
-              <span className="font-bold text-[13px] text-[#1D1D1F] tracking-tight">
+              <span className="font-bold text-[13px] text-[#1D1D1F] apple-headline tracking-tight">
                 Section
               </span>
               <div className="flex items-center gap-1.5 text-[11px]">
@@ -211,7 +234,7 @@ export const FilterSortMenu: React.FC<FilterSortMenuProps> = ({
               </div>
             </div>
 
-            {/* Letter Buttons Grid (Compact 6-Column, Letter Only) */}
+            {/* Letter Buttons Grid (Apple Clean Option Chips) */}
             <div className="grid grid-cols-6 gap-1.5">
               {allLetters.map((letter) => {
                 const isSelected = selectedLetters.includes(letter);
@@ -220,10 +243,10 @@ export const FilterSortMenu: React.FC<FilterSortMenuProps> = ({
                     key={letter}
                     type="button"
                     onClick={() => onToggleLetter(letter)}
-                    className={`h-7.5 rounded-[8px] text-center text-xs transition-all duration-150 cursor-pointer active:scale-95 flex items-center justify-center border ${
+                    className={`h-7 rounded-[7px] text-center text-xs transition-all duration-150 cursor-pointer active:scale-95 flex items-center justify-center border ${
                       isSelected
-                        ? 'bg-white text-[#1D1D1F] font-bold border-black/20 shadow-[0_1px_3px_rgba(0,0,0,0.1)]'
-                        : 'bg-[#F2F2F7] hover:bg-[#E5E5EA] text-[#636366] border-black/[0.03] font-medium'
+                        ? 'bg-white text-[#1D1D1F] font-semibold border-black/20 shadow-[0_1px_2.5px_rgba(0,0,0,0.08)]'
+                        : 'bg-[#F5F5F7] hover:bg-[#EBEBEF] text-[#1D1D1F]/75 border-black/[0.04] font-normal'
                     }`}
                   >
                     {letter}
